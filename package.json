@@ -1,7 +1,7 @@
 {
     "name": "kalang",
-    "version": "0.0.2",
-    "description": "",
+    "version": "0.0.3",
+    "description": "A programming language designed to make game development fast and fun!",
     "main": "index.js",
     "bin": {
         "kalang": "./dist/cli.js"

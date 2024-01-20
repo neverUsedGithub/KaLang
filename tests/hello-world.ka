@@ -20,6 +20,8 @@ function greet123 do
         "Hello, World!",
         "asd"
     )
+
+    return 456
 end
 
 for i in 0..10 do

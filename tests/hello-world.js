@@ -25,10 +25,6 @@ let i;
 kaboom();
 scene(`main`, function() {
     let player;
-    rect(10, `e
-    a
-    d
-    e`);
     player = add([
         rect(20, 20),
         pos(40, __kaOperators["+"](40, 10)),
@@ -43,6 +39,7 @@ scene(`main`, function() {
 });
 function greet123() {
     console.log(`Hello, World!`, `asd`);
+    return 456;
 }
 for (i of __kaOperators[".."](0, 10)) {
     console.log(i);

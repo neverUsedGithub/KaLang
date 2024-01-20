@@ -1,4 +1,4 @@
-const KEYWORDS = ["with", "do", "end", "if", "else", "then", "for", "in", "function", "while"];
+const KEYWORDS = ["with", "do", "end", "if", "else", "then", "for", "in", "function", "while", "return"];
 const SKIP = " \t\r\n";
 
 export enum TokenType {

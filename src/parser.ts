@@ -107,6 +107,10 @@ export interface WhileStatementNode extends BaseNode<"whileStatement"> {
     body: ParserNode;
 }
 
+export interface ReturnStatementNode extends BaseNode<"returnStatement"> {
+    expression: ParserNode;
+}
+
 export type ParserNode =
     | ProgramNode
     | StringNode
@@ -124,7 +128,8 @@ export type ParserNode =
     | ObjectNode
     | ForStatementNode
     | FunctionDeclarationNode
-    | WhileStatementNode;
+    | WhileStatementNode
+    | ReturnStatementNode;
 
 export class Parser {
     private pos: number = 0;
@@ -519,6 +524,18 @@ export class Parser {
         } satisfies WhileStatementNode;
     }
 
+    private parseReturnStatement(): ReturnStatementNode {
+        const start = this.eat(TokenType.KEYWORD, "return").span.start;
+        const expr = this.parseExpression();
+
+        return {
+            type: "returnStatement",
+            expression: expr,
+
+            span: new Span(start, expr.span.end),
+        };
+    }
+
     private parseStatement() {
         if (this.is(TokenType.KEYWORD, "if")) {
             return this.parseIfStatement();
@@ -534,6 +551,10 @@ export class Parser {
 
         if (this.is(TokenType.KEYWORD, "while")) {
             return this.parseWhileStatement();
+        }
+
+        if (this.is(TokenType.KEYWORD, "return")) {
+            return this.parseReturnStatement();
         }
 
         const expr = this.parseExpression();
@@ -574,10 +595,7 @@ export class Parser {
 
         if (!value) throw new ParsingError(`unexpected token ${tok.type}, expected ${type}`, tok.span);
 
-        throw new ParsingError(
-            `unexpected token ${tok.type}, expected '${value}' (${type})`,
-            tok.span
-        );
+        throw new ParsingError(`unexpected token ${tok.type}, expected '${value}' (${type})`, tok.span);
     }
 }
 

@@ -161,6 +161,10 @@ export class ASTVisitor {
 
                 return;
 
+            case "returnStatement":
+                this.visit(node.expression);
+                return;
+
             case "program": {
                 node.body.map((node) => this.visit(node));
                 return;
