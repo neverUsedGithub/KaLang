@@ -1,0 +1,35 @@
+kaboom()
+
+scene("main", do
+    player = add([
+        rect(20, 20),
+        pos(40, 40 + 10),
+        color(RED),
+        "player"
+    ])
+
+    onKeyPress("space", do
+        if isMouseDown() then
+            burp()
+        end
+    end)
+end)
+
+function greet123 do
+    console.log(
+        "Hello, World!",
+        "asd"
+    )
+end
+
+for i in 0..10 do
+    console.log(i)
+end
+
+i = 0
+
+while i < 10 do
+    console.log(i)
+end
+
+go("main")

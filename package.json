@@ -1,0 +1,51 @@
+{
+    "name": "kalang",
+    "version": "0.0.1",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "build": "npx tsup"
+    },
+    "files": [
+        "dist/**/*"
+    ],
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.js"
+        },
+        "./lexer": {
+            "types": "./dist/lexer.d.ts",
+            "import": "./dist/lexer.mjs",
+            "require": "./dist/lexer.js"
+        },
+        "./parser": {
+            "types": "./dist/parser.d.ts",
+            "import": "./dist/parser.mjs",
+            "require": "./dist/parser.js"
+        },
+        "./transpiler": {
+            "types": "./dist/transpiler.d.ts",
+            "import": "./dist/transpiler.mjs",
+            "require": "./dist/transpiler.js"
+        },
+        "./visitor": {
+            "types": "./dist/visitor.d.ts",
+            "import": "./dist/visitor.mjs",
+            "require": "./dist/visitor.js"
+        }
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "tsup": "^8.0.1",
+        "tsx": "^4.7.0",
+        "typescript": "^5.3.3"
+    },
+    "dependencies": {
+        "@types/node": "^20.11.5"
+    }
+}
