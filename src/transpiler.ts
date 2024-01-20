@@ -72,7 +72,7 @@ export class Transpiler {
                 return `${this.visit(node.value)}.${node.property}`;
 
             case "string":
-                return `"${node.value.replaceAll('"', '\\"')}"`;
+                return `\`${node.value.replaceAll("`", "\\`")}\``;
 
             case "variableAccess":
                 return node.name;

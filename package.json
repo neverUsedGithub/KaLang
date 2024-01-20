@@ -1,8 +1,11 @@
 {
     "name": "kalang",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "description": "",
     "main": "index.js",
+    "bin": {
+        "kalang": "./dist/cli.js"
+    },
     "scripts": {
         "build": "npx tsup"
     },
@@ -46,6 +49,8 @@
         "typescript": "^5.3.3"
     },
     "dependencies": {
-        "@types/node": "^20.11.5"
+        "@types/node": "^20.11.5",
+        "argue": "github:neverUsedGithub/Argue",
+        "commander": "^11.1.0"
     }
 }

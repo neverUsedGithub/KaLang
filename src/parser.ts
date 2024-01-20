@@ -572,10 +572,10 @@ export class Parser {
 
         const tok = this.tokens[this.pos];
 
-        if (!value) throw new ParsingError(`unexpected token '${tok.value}' (${tok.type}), expected ${type}`, tok.span);
+        if (!value) throw new ParsingError(`unexpected token ${tok.type}, expected ${type}`, tok.span);
 
         throw new ParsingError(
-            `unexpected token '${tok.value}' (${tok.type}), expected '${value}' (${type})`,
+            `unexpected token ${tok.type}, expected '${value}' (${type})`,
             tok.span
         );
     }

@@ -23,22 +23,26 @@ const __kaOperators = {
 }
 let i;
 kaboom();
-scene("main", function() {
+scene(`main`, function() {
     let player;
+    rect(10, `e
+    a
+    d
+    e`);
     player = add([
         rect(20, 20),
         pos(40, __kaOperators["+"](40, 10)),
         color(RED),
-        "player"
+        `player`
     ]);
-    onKeyPress("space", function() {
+    onKeyPress(`space`, function() {
         if (isMouseDown()) {
             burp();
         }
     });
 });
 function greet123() {
-    console.log("Hello, World!", "asd");
+    console.log(`Hello, World!`, `asd`);
 }
 for (i of __kaOperators[".."](0, 10)) {
     console.log(i);
@@ -47,4 +51,4 @@ i = 0;
 while (__kaOperators["<"](i, 10)) {
     console.log(i);
 }
-go("main");
+go(`main`);
