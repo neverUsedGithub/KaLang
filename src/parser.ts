@@ -108,7 +108,7 @@ export interface WhileStatementNode extends BaseNode<"whileStatement"> {
 }
 
 export interface ReturnStatementNode extends BaseNode<"returnStatement"> {
-    expression: ParserNode;
+    expression: ParserNode | null;
 }
 
 export type ParserNode =
@@ -522,14 +522,16 @@ export class Parser {
     }
 
     private parseReturnStatement(): ReturnStatementNode {
-        const start = this.eat(TokenType.KEYWORD, "return").span.start;
-        const expr = this.parseExpression();
+        const start = this.eat(TokenType.KEYWORD, "return").span;
+        let expr: ParserNode | null = null;
+
+        if (!this.is(TokenType.KEYWORD, "end")) expr = this.parseExpression();
 
         return {
             type: "returnStatement",
             expression: expr,
 
-            span: new Span(start, expr.span.end),
+            span: new Span(start.start, expr ? expr.span.end : start.end),
         };
     }
 

@@ -147,7 +147,9 @@ export class Transpiler {
                 )}) {\n${this.visit(node.body)}\n${getIndent(--this.indentLevel)}}`;
 
             case "returnStatement":
-                return `${getIndent(this.indentLevel)}return ${this.visit(node.expression)};`;
+                return `${getIndent(this.indentLevel)}return${
+                    node.expression ? " " + this.visit(node.expression) : ""
+                };`;
 
             case "program": {
                 const genBody = this.visitJoined(node.body, "\n");
