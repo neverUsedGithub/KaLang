@@ -1,41 +1,28 @@
-import { ParserNode } from "./parser";
+import { ExternVariableType, ParserNode } from "./parser";
 import { Span, Position } from "./lexer";
 
-type ScopeVariableMetadata = { definedAt: Position; type: "variable" };
-type ScopeFunctionMetadata = { definedAt: Position; type: "function" };
+export type ScopeSymbolMetadata = { definedAt: Position; type: "variable" | "function" | "class" };
+export type ScopeSymbol = { name: string; meta: ScopeSymbolMetadata };
 
 export class Scope {
-    private variables: Map<string, ScopeVariableMetadata> = new Map();
-    private functions: Map<string, ScopeFunctionMetadata> = new Map();
+    private symbols: Map<string, ScopeSymbolMetadata> = new Map();
 
     constructor(public parent: Scope | null = null) {}
 
-    addVariable(name: string, definedAt: Position) {
-        if (!this.variables.has(name)) this.variables.set(name, { definedAt, type: "variable" });
+    addSymbol(type: ScopeSymbolMetadata["type"], name: string, definedAt: Position) {
+        if (!this.symbols.has(name)) this.symbols.set(name, { definedAt, type });
     }
 
-    addFunction(name: string, definedAt: Position) {
-        if (!this.functions.has(name)) this.functions.set(name, { definedAt, type: "function" });
-    }
-
-    listVariables(): [string, ScopeVariableMetadata][] {
-        const vars = [...this.variables.entries()];
-
-        if (!this.parent) return vars;
-        return [...vars, ...this.parent.listVariables()];
-    }
-
-    listFunctions(): [string, ScopeFunctionMetadata][] {
-        const functs = [...this.functions.entries()];
-
-        if (!this.parent) return functs;
-        return [...functs, ...this.parent.listFunctions()];
+    list(): ScopeSymbol[] {
+        const parentSymbols = this.parent ? this.parent.list() : [];
+        return [...parentSymbols, ...Array.from(this.symbols.entries()).map((s) => ({ name: s[0], meta: s[1] }))];
     }
 }
 
 export class ASTVisitor {
     private indentLevel: number = 0;
     private currentScope: Scope = new Scope();
+    private externVariables: Map<string, ExternVariableType> = new Map();
     public span2Scope: [Span, Scope][] = [];
 
     constructor(private root: ParserNode) {}
@@ -110,7 +97,9 @@ export class ASTVisitor {
                 return;
 
             case "variableAssign":
-                if (node.name.type === "variableAccess") this.currentScope.addVariable(node.name.name, node.span.start);
+                if (node.name.type === "variableAccess")
+                    if (!this.externVariables.has(node.name.name))
+                        this.currentScope.addSymbol("variable", node.name.name, node.span.start);
 
                 this.visit(node.name);
                 this.visit(node.value);
@@ -146,7 +135,9 @@ export class ASTVisitor {
             }
 
             case "forStatement":
-                this.currentScope.addVariable(node.variable.value, node.span.start);
+                if (!this.externVariables.has(node.variable.value))
+                    this.currentScope.addSymbol("variable", node.variable.value, node.span.start);
+
                 this.visit(node.iterable);
                 this.visit(node.body);
                 return;
@@ -156,13 +147,25 @@ export class ASTVisitor {
                 return;
 
             case "functionDeclaration":
-                this.currentScope.addFunction(node.name, node.span.start);
+                this.currentScope.addSymbol("function", node.name, node.span.start);
                 this.visit(node.body);
 
                 return;
 
             case "returnStatement":
                 if (node.expression) this.visit(node.expression);
+                return;
+
+            case "classDeclaration":
+                for (const md of node.methods) this.visit(md);
+                return;
+
+            case "externDeclaration":
+                this.externVariables.set(node.name, node.varType);
+                return;
+
+            case "methodDeclaration":
+                this.visit(node.body);
                 return;
 
             case "program": {

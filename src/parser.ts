@@ -8,8 +8,8 @@ const PRECEDENCES: { [K in (typeof OPERATORS)[number]]: number } = {
     "/": 2,
     "%": 2,
 
-    "===": 3,
-    "!==": 3,
+    "==": 3,
+    "!=": 3,
     "<=": 3,
     ">=": 3,
     "<": 3,
@@ -111,6 +111,27 @@ export interface ReturnStatementNode extends BaseNode<"returnStatement"> {
     expression: ParserNode | null;
 }
 
+export interface ClassDeclarationNode extends BaseNode<"classDeclaration"> {
+    name: string;
+    methods: ParserNode[];
+}
+
+export interface MethodDeclarationNode extends BaseNode<"methodDeclaration"> {
+    name: Token;
+    body: ParserNode;
+    parameters: string[];
+}
+
+export enum ExternVariableType {
+    CLASS,
+    VARIABLE,
+}
+
+export interface ExternDeclarationNode extends BaseNode<"externDeclaration"> {
+    name: string;
+    varType: ExternVariableType;
+}
+
 export type ParserNode =
     | ProgramNode
     | StringNode
@@ -129,7 +150,10 @@ export type ParserNode =
     | ForStatementNode
     | FunctionDeclarationNode
     | WhileStatementNode
-    | ReturnStatementNode;
+    | ReturnStatementNode
+    | ClassDeclarationNode
+    | MethodDeclarationNode
+    | ExternDeclarationNode;
 
 export class Parser {
     private pos: number = 0;
@@ -535,6 +559,84 @@ export class Parser {
         };
     }
 
+    private parseMethodDeclaration() {
+        const methodName = this.is(TokenType.OPERATOR) ? this.eat(TokenType.OPERATOR) : this.eat(TokenType.IDENTIFIER);
+        const params: string[] = [];
+        const body: ParserNode[] = [];
+
+        this.eat(TokenType.DELIMITER, "(");
+
+        while (!this.is(TokenType.DELIMITER, ")")) {
+            if (params.length > 0) this.eat(TokenType.DELIMITER, ",");
+            params.push(this.eat(TokenType.IDENTIFIER).value);
+        }
+
+        this.eat(TokenType.DELIMITER, ")");
+        const bodyStart = this.eat(TokenType.KEYWORD, "do").span.start;
+
+        while (!this.is(TokenType.KEYWORD, "end")) {
+            body.push(this.parseStatement());
+        }
+
+        const end = this.eat(TokenType.KEYWORD, "end");
+
+        return {
+            type: "methodDeclaration",
+            name: methodName,
+            parameters: params,
+            body: {
+                type: "blockStatement",
+                body,
+                span: new Span(bodyStart, end.span.end),
+            },
+
+            span: new Span(methodName.span.start, end.span.end),
+        } satisfies MethodDeclarationNode;
+    }
+
+    private parseClassDeclaration() {
+        const start = this.eat(TokenType.KEYWORD, "class").span.start;
+        const name = this.eat(TokenType.IDENTIFIER).value;
+        const methods: MethodDeclarationNode[] = [];
+        this.eat(TokenType.KEYWORD, "do");
+
+        while (!this.is(TokenType.KEYWORD, "end")) {
+            methods.push(this.parseMethodDeclaration());
+        }
+
+        const end = this.eat(TokenType.KEYWORD, "end").span.end;
+
+        return {
+            type: "classDeclaration",
+            name,
+            methods,
+
+            span: new Span(start, end),
+        } satisfies ClassDeclarationNode;
+    }
+
+    private parseExternDeclaration() {
+        const start = this.eat(TokenType.KEYWORD, "extern").span.start;
+        let type = ExternVariableType.VARIABLE;
+        let name: Token;
+
+        if (this.is(TokenType.KEYWORD, "class")) {
+            this.eat(TokenType.KEYWORD, "class");
+            type = ExternVariableType.CLASS;
+            name = this.eat(TokenType.IDENTIFIER);
+        } else {
+            name = this.eat(TokenType.IDENTIFIER);
+        }
+
+        return {
+            type: "externDeclaration",
+            name: name.value,
+            varType: type,
+
+            span: new Span(start, name.span.end),
+        } satisfies ExternDeclarationNode;
+    }
+
     private parseStatement() {
         if (this.is(TokenType.KEYWORD, "if")) {
             return this.parseIfStatement();
@@ -554,6 +656,14 @@ export class Parser {
 
         if (this.is(TokenType.KEYWORD, "return")) {
             return this.parseReturnStatement();
+        }
+
+        if (this.is(TokenType.KEYWORD, "class")) {
+            return this.parseClassDeclaration();
+        }
+
+        if (this.is(TokenType.KEYWORD, "extern")) {
+            return this.parseExternDeclaration();
         }
 
         const expr = this.parseExpression();

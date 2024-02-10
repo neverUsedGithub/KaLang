@@ -1,5 +1,5 @@
-import { OPERATORS } from "./lexer";
-import { ParserNode } from "./parser";
+import { OPERATORS, TokenType } from "./lexer";
+import { ExternVariableType, ParserNode } from "./parser";
 
 const BUILTIN_OPERATORS = "__kaOperators";
 const BUILTIN_RANGE = "__kaGetRange";
@@ -8,21 +8,31 @@ function getIndent(level: number) {
     return "    ".repeat(level);
 }
 
-export class Scope {
-    private variables: Set<string> = new Set();
+interface VariableMetadata {
+    isClass: boolean;
+}
 
-    add(name: string) {
-        this.variables.add(name);
+export class Scope {
+    private variables: Map<string, VariableMetadata> = new Map();
+
+    add(name: string, isClass: boolean) {
+        if (this.variables.has(name)) return;
+        this.variables.set(name, { isClass });
+    }
+
+    get(name: string) {
+        return this.variables.get(name);
     }
 
     list() {
-        return Array.from(this.variables.keys());
+        return Array.from(this.variables.entries()).map((v) => ({ name: v[0], meta: v[1] }));
     }
 }
 
 export class Transpiler {
     private indentLevel: number = 0;
     private currentScope: Scope = new Scope();
+    private externVariables: Map<string, ExternVariableType> = new Map();
 
     constructor(private root: ParserNode) {}
 
@@ -31,7 +41,10 @@ export class Transpiler {
     }
 
     private visitJoined(nodes: ParserNode[], separator: string) {
-        return nodes.map((node) => this.visit(node)).join(separator);
+        return nodes
+            .map((node) => this.visit(node))
+            .filter((str) => str.length !== 0)
+            .join(separator);
     }
 
     private visit(node: ParserNode): string {
@@ -53,7 +66,16 @@ export class Transpiler {
                 )})`;
 
             case "functionCall":
-                return `${this.visit(node.fn)}(${this.visitJoined(node.arguments, ", ")})`;
+                let classMaker = "";
+
+                if (node.fn.type === "variableAccess") {
+                    if (
+                        this.currentScope.get(node.fn.name)?.isClass ||
+                        this.externVariables.get(node.fn.name) === ExternVariableType.CLASS
+                    )
+                        classMaker = "new ";
+                }
+                return `${classMaker}${this.visit(node.fn)}(${this.visitJoined(node.arguments, ", ")})`;
 
             case "lambdaFunction": {
                 this.indentLevel++;
@@ -78,7 +100,8 @@ export class Transpiler {
                 return node.name;
 
             case "variableAssign":
-                if (node.name.type === "variableAccess") this.currentScope.add(node.name.name);
+                if (node.name.type === "variableAccess")
+                    if (!this.externVariables.has(node.name.name)) this.currentScope.add(node.name.name, false);
                 return `${this.visit(node.name)} = ${this.visit(node.value)}`;
 
             case "expressionStatement":
@@ -92,7 +115,9 @@ export class Transpiler {
 
                 let vars = "";
                 for (const variable of this.currentScope.list()) {
-                    vars += `${getIndent(this.indentLevel)}let ${variable};\n`;
+                    if (variable.meta.isClass) continue;
+
+                    vars += `${getIndent(this.indentLevel)}let ${variable.name};\n`;
                 }
 
                 this.currentScope = previous;
@@ -131,7 +156,7 @@ export class Transpiler {
             }
 
             case "forStatement":
-                this.currentScope.add(node.variable.value);
+                if (!this.externVariables.has(node.variable.value)) this.currentScope.add(node.variable.value, false);
                 return `${getIndent(this.indentLevel++)}for (${node.variable.value} of ${this.visit(
                     node.iterable
                 )}) {\n${this.visit(node.body)}\n${getIndent(--this.indentLevel)}}`;
@@ -151,6 +176,27 @@ export class Transpiler {
                     node.expression ? " " + this.visit(node.expression) : ""
                 };`;
 
+            case "methodDeclaration":
+                const name =
+                    node.name.type === TokenType.OPERATOR
+                        ? `"${node.name.value}"`
+                        : node.name.value === "__init__"
+                        ? "constructor"
+                        : node.name.value;
+                return `${getIndent(this.indentLevel++)}${name}(${node.parameters.join(", ")}) {\n${this.visit(
+                    node.body
+                )}\n${getIndent(--this.indentLevel)}}`;
+
+            case "classDeclaration":
+                this.currentScope.add(node.name, true);
+                return `${getIndent(this.indentLevel++)}class ${node.name} {\n${node.methods
+                    .map((m) => this.visit(m))
+                    .join("\n")}\n${getIndent(--this.indentLevel)}}`;
+
+            case "externDeclaration":
+                this.externVariables.set(node.name, node.varType);
+                return "";
+
             case "program": {
                 const genBody = this.visitJoined(node.body, "\n");
                 let generated = `const ${BUILTIN_RANGE} = (start, end) => {
@@ -163,16 +209,21 @@ export class Transpiler {
 const ${BUILTIN_OPERATORS} = {\n`;
 
                 for (const operator of OPERATORS) {
-                    if (operator !== "..") {
-                        generated += `    "${operator}": (a,b) => a["${operator}"] ? a["${operator}"](b) : a ${operator} b,\n`;
-                    } else {
+                    let jsOperator = operator;
+                    if (operator === "!=" || operator === "==") jsOperator += "=";
+
+                    if (operator === "..") {
                         generated += `    "..": (a,b) => a[".."] ? a[".."](b) : ${BUILTIN_RANGE}(a, b),\n`;
+                    } else {
+                        generated += `    "${operator}": (a,b) => a["${operator}"] ? a["${operator}"](b) : a ${jsOperator} b,\n`;
                     }
                 }
 
                 let vars = "";
                 for (const variable of this.currentScope.list()) {
-                    vars += `let ${variable};\n`;
+                    if (variable.meta.isClass) continue;
+
+                    vars += `let ${variable.name};\n`;
                 }
 
                 generated += "}\n";

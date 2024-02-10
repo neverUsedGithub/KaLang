@@ -1,4 +1,18 @@
-const KEYWORDS = ["with", "do", "end", "if", "else", "then", "for", "in", "function", "while", "return"];
+const KEYWORDS = [
+    "with",
+    "do",
+    "end",
+    "if",
+    "else",
+    "then",
+    "for",
+    "in",
+    "function",
+    "while",
+    "return",
+    "class",
+    "extern",
+];
 const SKIP = " \t\r\n";
 
 export enum TokenType {
@@ -12,7 +26,7 @@ export enum TokenType {
     EQUALS = "EQUALS",
 }
 
-export const OPERATORS = ["+", "-", "*", "/", "%", "===", "!==", "<=", ">=", "<", ">", "&&", "||", ".."] as const;
+export const OPERATORS = ["+", "-", "*", "/", "%", "==", "!=", "<=", ">=", "<", ">", "&&", "||", ".."] as const;
 
 const OPERATOR_DISPLAY: { [text: string]: (typeof OPERATORS)[number] } = {
     "+": "+",
@@ -20,8 +34,8 @@ const OPERATOR_DISPLAY: { [text: string]: (typeof OPERATORS)[number] } = {
     "*": "*",
     "/": "/",
     "%": "%",
-    "==": "===",
-    "!=": "!==",
+    "==": "==",
+    "!=": "!=",
     "<=": "<=",
     ">=": ">=",
     "<": "<",

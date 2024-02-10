@@ -44,4 +44,14 @@ class Testing do
     +(other) do
         return null
     end
+
+    and(other) do
+        console.log("Hello, World!")
+    end
 end
+
+Testing()
+
+extern class Other
+
+Other()
