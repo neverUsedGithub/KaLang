@@ -1,5 +1,6 @@
-import { Lexer } from "./lexer";
-import { Parser } from "./parser";
+import { ErrorFormatter } from "./error";
+import { Lexer, LexingError } from "./lexer";
+import { Parser, ParsingError } from "./parser";
 import { Transpiler } from "./transpiler";
 
 export function transpileString(source: string): string {
@@ -16,4 +17,8 @@ export async function transpileFile(filename: string): Promise<string> {
     const ast = new Parser(tokens).parse();
 
     return new Transpiler(ast).transpile();
+}
+
+export function formatError(error: LexingError | ParsingError, source: string, filename: string = "<main>") {
+    return new ErrorFormatter(error).format(source, filename);
 }

@@ -1,6 +1,6 @@
 {
     "name": "kalang",
-    "version": "0.0.5",
+    "version": "0.0.6",
     "description": "A programming language designed to make game development fast and fun!",
     "main": "index.js",
     "bin": {
@@ -38,6 +38,11 @@
             "types": "./dist/visitor.d.ts",
             "import": "./dist/visitor.mjs",
             "require": "./dist/visitor.js"
+        },
+        "./error": {
+            "types": "./dist/error.d.ts",
+            "import": "./dist/error.mjs",
+            "require": "./dist/error.js"
         }
     },
     "keywords": [],
