@@ -10,7 +10,7 @@ export function prettifyAST(ast: Prettifyable | Prettifyable[], level: number = 
     if (ast instanceof Span) return `Span(${prettifyAST(ast.start)}, ${prettifyAST(ast.end)})`;
     if (ast instanceof Position) return `Position(${ast.line}, ${ast.col})`;
     if (ast instanceof VisitorScope)
-        return `VisitorScope(fn=${ast.listFunctions().join(", ")}, var=${ast.listVariables().join(", ")})`;
+        return `VisitorScope(symbols=${ast.list().map(v => v.name).join(", ")})`;
     if (Array.isArray(ast)) {
         let str = "[\n";
         for (const item of ast) {
