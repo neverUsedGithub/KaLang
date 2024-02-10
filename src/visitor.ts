@@ -162,7 +162,7 @@ export class ASTVisitor {
                 return;
 
             case "returnStatement":
-                this.visit(node.expression);
+                if (node.expression) this.visit(node.expression);
                 return;
 
             case "program": {
