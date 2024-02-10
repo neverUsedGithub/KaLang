@@ -157,6 +157,7 @@ export class ASTVisitor {
                 return;
 
             case "classDeclaration":
+                this.currentScope.addSymbol("class", node.name, node.span.start);
                 for (const md of node.methods) this.visit(md);
                 return;
 
