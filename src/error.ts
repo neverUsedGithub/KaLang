@@ -4,13 +4,6 @@ import { ParsingError } from "./parser";
 export class ErrorFormatter {
     constructor(private error: LexingError | ParsingError) {}
 
-    /*
-    
-    testing
-       ^^^^
-    errors
-    ^^^^
-    */
     format(source: string, filename: string): string {
         let span: Span;
         let errorType: string;
@@ -30,7 +23,7 @@ export class ErrorFormatter {
 
         const sanitizedReason = this.error.reason.replaceAll("\n", "\\n").replaceAll("\r", "\\r");
 
-        out += ` ${" ".repeat(maxLineLength)}---> ${errorType}Error at ${filename}:${span.start.line + 1}:${
+        out += ` ${" ".repeat(maxLineLength)}─┬─> ${errorType}Error at ${filename}:${span.start.line + 1}:${
             span.start.col + 1
         }\n`;
         out += ` ${" ".repeat(maxLineLength)} │\n`;
@@ -70,7 +63,7 @@ export class ErrorFormatter {
             out += "^".repeat(span.end.col + 1) + "\n";
         }
 
-        out += ` ${" ".repeat(maxLineLength)} └--> ${sanitizedReason}`;
+        out += ` ${" ".repeat(maxLineLength)} └──> ${sanitizedReason}`;
 
         return out;
     }

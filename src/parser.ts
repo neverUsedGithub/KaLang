@@ -223,10 +223,7 @@ export class Parser {
             } satisfies ObjectNode;
         }
 
-        // Just here for the error message
-        this.eat(TokenType.STRING);
-
-        throw new Error("..."); // <--- shuts up ts
+        throw new ParsingError("expected an expression", this.tokens[this.pos].span);
     }
 
     private parsePrimary(): ParserNode {
