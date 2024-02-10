@@ -1,0 +1,9 @@
+foo = "outer"
+
+if true then
+    local foo = "something"
+end
+
+if foo == "something" then
+    process.exit(1)
+end

@@ -1,0 +1,5 @@
+function greet(name) do
+    console.log("Hello, " + name + "!")
+end
+
+greet("World")

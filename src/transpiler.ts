@@ -15,8 +15,14 @@ interface VariableMetadata {
 export class Scope {
     private variables: Map<string, VariableMetadata> = new Map();
 
-    add(name: string, isClass: boolean) {
-        if (this.variables.has(name)) return;
+    constructor(private parent: Scope | null = null) {}
+
+    has(name: string): boolean {
+        return this.variables.has(name) || (this.parent ? this.parent.has(name) : false);
+    }
+
+    add(name: string, isClass: boolean, isLocal: boolean = false) {
+        if (!isLocal && this.has(name)) return;
         this.variables.set(name, { isClass });
     }
 
@@ -27,6 +33,13 @@ export class Scope {
     list() {
         return Array.from(this.variables.entries()).map((v) => ({ name: v[0], meta: v[1] }));
     }
+}
+
+function getVariableName(expr: ParserNode): string {
+    if (expr.type === "binaryExpression") return getVariableName(expr.left) + "." + getVariableName(expr.right);
+    if (expr.type === "variableAccess") return expr.name;
+
+    throw new Error("getVariableName called on invalid node");
 }
 
 export class Transpiler {
@@ -61,6 +74,13 @@ export class Transpiler {
             }
 
             case "binaryExpression":
+                // '.' is not overloadable
+                if (node.operator.value === ".") {
+                    if (node.right.type === "variableAccess")
+                        return `${this.visit(node.left)}.${this.visit(node.right)}`;
+                    return `${this.visit(node.left)}[${this.visit(node.right)}]`;
+                }
+
                 return `${BUILTIN_OPERATORS}["${node.operator.value}"](${this.visit(node.left)}, ${this.visit(
                     node.right
                 )})`;
@@ -101,15 +121,16 @@ export class Transpiler {
 
             case "variableAssign":
                 if (node.name.type === "variableAccess")
-                    if (!this.externVariables.has(node.name.name)) this.currentScope.add(node.name.name, false);
-                return `${this.visit(node.name)} = ${this.visit(node.value)}`;
+                    if (!this.externVariables.has(node.name.name))
+                        this.currentScope.add(node.name.name, false, node.isLocal);
+                return `${getVariableName(node.name)} = ${this.visit(node.value)}`;
 
             case "expressionStatement":
                 return `${getIndent(this.indentLevel)}${this.visit(node.expression)};`;
 
             case "blockStatement": {
                 const previous = this.currentScope;
-                this.currentScope = new Scope();
+                this.currentScope = new Scope(this.currentScope);
 
                 const out = this.visitJoined(node.body, "\n");
 
@@ -209,6 +230,8 @@ export class Transpiler {
 const ${BUILTIN_OPERATORS} = {\n`;
 
                 for (const operator of OPERATORS) {
+                    if (operator === ".") continue;
+
                     let jsOperator = operator;
                     if (operator === "!=" || operator === "==") jsOperator += "=";
 

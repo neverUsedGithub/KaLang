@@ -1,0 +1,11 @@
+for i in 0..10 do
+    console.log("loop", i)
+end
+
+array = [ 1, 2, 3 ]
+j = 0
+while j < 5 do
+    console.log("j < 5")
+
+    j = j + 1
+end

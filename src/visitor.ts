@@ -9,8 +9,8 @@ export class Scope {
 
     constructor(public parent: Scope | null = null) {}
 
-    addSymbol(type: ScopeSymbolMetadata["type"], name: string, definedAt: Position) {
-        if (!this.symbols.has(name)) this.symbols.set(name, { definedAt, type });
+    addSymbol(type: ScopeSymbolMetadata["type"], name: string, definedAt: Position, isLocal: boolean = false) {
+        if (isLocal || !this.symbols.has(name)) this.symbols.set(name, { definedAt, type });
     }
 
     list(): ScopeSymbol[] {
@@ -99,7 +99,7 @@ export class ASTVisitor {
             case "variableAssign":
                 if (node.name.type === "variableAccess")
                     if (!this.externVariables.has(node.name.name))
-                        this.currentScope.addSymbol("variable", node.name.name, node.span.start);
+                        this.currentScope.addSymbol("variable", node.name.name, node.span.start, node.isLocal);
 
                 this.visit(node.name);
                 this.visit(node.value);

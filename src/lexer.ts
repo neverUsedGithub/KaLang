@@ -12,6 +12,7 @@ const KEYWORDS = [
     "return",
     "class",
     "extern",
+    "local"
 ];
 const SKIP = " \t\r\n";
 
@@ -26,7 +27,7 @@ export enum TokenType {
     EQUALS = "EQUALS",
 }
 
-export const OPERATORS = ["+", "-", "*", "/", "%", "==", "!=", "<=", ">=", "<", ">", "&&", "||", ".."] as const;
+export const OPERATORS = ["+", "-", "*", "/", "%", "==", "!=", "<=", ">=", "<", ">", "&&", "||", "..", "."] as const;
 
 const OPERATOR_DISPLAY: { [text: string]: (typeof OPERATORS)[number] } = {
     "+": "+",
@@ -43,6 +44,7 @@ const OPERATOR_DISPLAY: { [text: string]: (typeof OPERATORS)[number] } = {
     and: "&&",
     or: "||",
     "..": "..",
+    ".": "."
 };
 
 const SINGLE_TOKENS = {
@@ -54,7 +56,6 @@ const SINGLE_TOKENS = {
     "{": TokenType.DELIMITER,
     "}": TokenType.DELIMITER,
     ":": TokenType.DELIMITER,
-    ".": TokenType.DELIMITER,
     "=": TokenType.EQUALS,
 } as const;
 

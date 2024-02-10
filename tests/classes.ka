@@ -1,0 +1,21 @@
+class TrainCart do
+    __init__(name) do
+        this.name = name
+        this.parts = []
+    end
+
+    log() do
+        console.log(this.name, "->", this.parts.map(with cart do
+            return cart.name
+        end).join(" -> "))
+    end
+
+    +(other) do
+        this.parts.push(other)
+        return this
+    end
+end
+
+train = TrainCart("front") + TrainCart("middle") + TrainCart("back")
+
+train.log() # front -> middle -> back

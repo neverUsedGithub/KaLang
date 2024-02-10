@@ -1,6 +1,6 @@
 import { Token, TokenType, Span, OPERATORS, Position } from "./lexer";
 
-const PRECEDENCES: { [K in (typeof OPERATORS)[number]]: number } = {
+const PRECEDENCES: { [K in (typeof OPERATORS)[number] | "." | "fn"]: number } = {
     "+": 1,
     "-": 1,
 
@@ -19,6 +19,10 @@ const PRECEDENCES: { [K in (typeof OPERATORS)[number]]: number } = {
     "||": 4,
 
     "..": 5,
+
+    fn: 6,
+
+    ".": 7,
 };
 
 export interface BaseNode<T extends string> {
@@ -62,6 +66,7 @@ export interface FunctionCallNode extends BaseNode<"functionCall"> {
 export interface VariableAssignNode extends BaseNode<"variableAssign"> {
     name: ParserNode;
     value: ParserNode;
+    isLocal: boolean;
 }
 
 export interface ArrayNode extends BaseNode<"array"> {
@@ -155,6 +160,15 @@ export type ParserNode =
     | MethodDeclarationNode
     | ExternDeclarationNode;
 
+function isAssignable(expr: ParserNode): boolean {
+    if (expr.type === "binaryExpression" && expr.operator.value === ".")
+        return isAssignable(expr.left) && isAssignable(expr.right);
+
+    if (expr.type === "variableAccess") return true;
+
+    return false;
+}
+
 export class Parser {
     private pos: number = 0;
 
@@ -164,7 +178,44 @@ export class Parser {
         return this.parseProgram();
     }
 
-    private parsePrimaryInner(): ParserNode {
+    private parsePrimary(): ParserNode {
+        if (this.is(TokenType.KEYWORD, "do") || this.is(TokenType.KEYWORD, "with")) {
+            const parameters: Token[] = [];
+
+            if (this.is(TokenType.KEYWORD, "with")) {
+                this.eat(TokenType.KEYWORD, "with");
+
+                do {
+                    if (parameters.length > 0) this.eat(TokenType.DELIMITER, ",");
+                    parameters.push(this.eat(TokenType.IDENTIFIER));
+                } while (!this.is(TokenType.KEYWORD, "do"));
+            }
+
+            const start = this.eat(TokenType.KEYWORD, "do").span.start;
+            const body: ParserNode[] = [];
+
+            while (!this.is(TokenType.KEYWORD, "end")) {
+                body.push(this.parseStatement());
+            }
+
+            const end = this.eat(TokenType.KEYWORD, "end").span.end;
+
+            return {
+                type: "lambdaFunction",
+                body: {
+                    type: "blockStatement",
+                    body: body,
+                    span:
+                        body.length > 0
+                            ? new Span(body[0].span.start, body[body.length - 1].span.end)
+                            : new Span(start, end),
+                } satisfies BlockStatementNode,
+                parameters,
+
+                span: new Span(start, end),
+            } satisfies LambdaFunctionNode;
+        }
+
         if (this.is(TokenType.DELIMITER, "[")) {
             const start = this.eat(TokenType.DELIMITER, "[").span.start;
             const items: ParserNode[] = [];
@@ -250,126 +301,92 @@ export class Parser {
         throw new ParsingError("expected an expression", this.tokens[this.pos].span);
     }
 
-    private parsePrimary(): ParserNode {
-        if (this.is(TokenType.KEYWORD, "do") || this.is(TokenType.KEYWORD, "with")) {
-            const parameters: Token[] = [];
+    private parseExpressionInner(lhs: ParserNode, minPrecedence: number) {
+        while (
+            (this.is(TokenType.OPERATOR) &&
+                this.tokens[this.pos].value in PRECEDENCES &&
+                PRECEDENCES[this.tokens[this.pos].value as keyof typeof PRECEDENCES] >= minPrecedence) ||
+            (this.is(TokenType.DELIMITER, "(") && PRECEDENCES["fn"] >= minPrecedence)
+        ) {
+            if (this.is(TokenType.DELIMITER, "(")) {
+                this.eat(TokenType.DELIMITER, "(");
 
-            if (this.is(TokenType.KEYWORD, "with")) {
-                this.eat(TokenType.KEYWORD, "with");
+                const args: ParserNode[] = [];
 
-                do {
-                    if (parameters.length > 0) this.eat(TokenType.DELIMITER, ",");
-                    parameters.push(this.eat(TokenType.IDENTIFIER));
-                } while (!this.is(TokenType.KEYWORD, "do"));
+                while (!this.is(TokenType.DELIMITER, ")")) {
+                    if (args.length > 0) this.eat(TokenType.DELIMITER, ",");
+                    args.push(this.parseExpression());
+                }
+
+                const end = this.eat(TokenType.DELIMITER, ")").span.end;
+
+                lhs = {
+                    type: "functionCall",
+                    fn: lhs,
+                    arguments: args,
+                    span: new Span(lhs.span.start, end),
+                } satisfies FunctionCallNode;
+
+                continue;
+            } else {
+                const op = this.eat(TokenType.OPERATOR);
+                const prec = PRECEDENCES[op.value as keyof typeof PRECEDENCES];
+                let rhs: ParserNode = this.parsePrimary();
+
+                while (
+                    (this.is(TokenType.OPERATOR) &&
+                        this.tokens[this.pos].value in PRECEDENCES &&
+                        PRECEDENCES[this.tokens[this.pos].value as keyof typeof PRECEDENCES] > prec) ||
+                    (this.is(TokenType.DELIMITER, "(") && PRECEDENCES["fn"] > prec)
+                ) {
+                    rhs = this.parseExpressionInner(rhs, prec + 1);
+                }
+
+                lhs = {
+                    type: "binaryExpression",
+                    left: lhs,
+                    right: rhs,
+                    operator: op,
+                    span: new Span(lhs.span.start, rhs.span.end),
+                } satisfies BinaryExpressionNode;
             }
-
-            const start = this.eat(TokenType.KEYWORD, "do").span.start;
-            const body: ParserNode[] = [];
-
-            while (!this.is(TokenType.KEYWORD, "end")) {
-                body.push(this.parseStatement());
-            }
-
-            const end = this.eat(TokenType.KEYWORD, "end").span.end;
-
-            return {
-                type: "lambdaFunction",
-                body: {
-                    type: "blockStatement",
-                    body: body,
-                    span:
-                        body.length > 0
-                            ? new Span(body[0].span.start, body[body.length - 1].span.end)
-                            : new Span(start, end),
-                } satisfies BlockStatementNode,
-                parameters,
-
-                span: new Span(start, end),
-            } satisfies LambdaFunctionNode;
         }
 
-        let node = this.parsePrimaryInner();
+        return lhs;
+    }
 
-        while (this.is(TokenType.DELIMITER, ".")) {
-            this.eat(TokenType.DELIMITER, ".");
-            const prop = this.eat(TokenType.IDENTIFIER);
+    private parseExpression(): ParserNode {
+        const expr = this.parseExpressionInner(this.parsePrimary(), 0);
 
-            node = {
-                type: "propertyAccess",
-                value: node,
-                property: prop.value,
-                span: new Span(node.span.start, prop.span.end),
-            } satisfies PropertyAccessNode;
-        }
-
-        if (this.is(TokenType.EQUALS)) {
+        if (this.is(TokenType.EQUALS) && isAssignable(expr)) {
             this.eat(TokenType.EQUALS);
 
             const value = this.parseExpression();
 
             return {
                 type: "variableAssign",
-                name: node,
+                name: expr,
                 value,
-                span: new Span(node.span.start, value.span.end),
+                isLocal: false,
+
+                span: new Span(expr.span.start, value.span.end),
             } satisfies VariableAssignNode;
         }
 
-        while (this.is(TokenType.DELIMITER, "(")) {
-            this.eat(TokenType.DELIMITER, "(");
-
-            const args: ParserNode[] = [];
-
-            while (!this.is(TokenType.DELIMITER, ")")) {
-                if (args.length > 0) this.eat(TokenType.DELIMITER, ",");
-                args.push(this.parseExpression());
-            }
-
-            const end = this.eat(TokenType.DELIMITER, ")").span.end;
-
-            node = {
-                type: "functionCall",
-                fn: node,
-                arguments: args,
-                span: new Span(node.span.start, end),
-            } satisfies FunctionCallNode;
-        }
-
-        return node;
+        return expr;
     }
 
-    private parseExpressionInner(lhs: ParserNode, minPrecedence: number) {
-        while (
-            this.is(TokenType.OPERATOR) &&
-            this.tokens[this.pos].value in PRECEDENCES &&
-            PRECEDENCES[this.tokens[this.pos].value as keyof typeof PRECEDENCES] >= minPrecedence
-        ) {
-            const op = this.eat(TokenType.OPERATOR);
-            const prec = PRECEDENCES[op.value as keyof typeof PRECEDENCES];
-            let rhs: ParserNode = this.parsePrimary();
+    private parseLocalStatement(): ParserNode {
+        const start = this.eat(TokenType.KEYWORD, "local").span.start;
+        const name = this.parseExpression();
 
-            while (
-                this.is(TokenType.OPERATOR) &&
-                this.tokens[this.pos].value in PRECEDENCES &&
-                PRECEDENCES[this.tokens[this.pos].value as keyof typeof PRECEDENCES] > prec
-            ) {
-                rhs = this.parseExpressionInner(rhs, prec + 1);
-            }
+        if (name.type !== "variableAssign")
+            throw new ParsingError("expected variable assignment after keyword local", name.span);
 
-            lhs = {
-                type: "binaryExpression",
-                left: lhs,
-                right: rhs,
-                operator: op,
-                span: new Span(lhs.span.start, rhs.span.end),
-            } satisfies BinaryExpressionNode;
-        }
-
-        return lhs;
-    }
-
-    private parseExpression() {
-        return this.parseExpressionInner(this.parsePrimary(), 0);
+        return {
+            ...name,
+            isLocal: true,
+        } satisfies VariableAssignNode;
     }
 
     private parseIfStatement(): ParserNode {
@@ -664,6 +681,10 @@ export class Parser {
 
         if (this.is(TokenType.KEYWORD, "extern")) {
             return this.parseExternDeclaration();
+        }
+
+        if (this.is(TokenType.KEYWORD, "local")) {
+            return this.parseLocalStatement();
         }
 
         const expr = this.parseExpression();
