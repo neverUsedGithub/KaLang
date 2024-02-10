@@ -24,10 +24,6 @@ end
 main()
 ```
 
-### 3. Transpile your program
+### 3. Run your program
 
-`kalang program.ka`
-
-### 4. Run your program
-
-`node program.js`
+`kalang run program.ka`
