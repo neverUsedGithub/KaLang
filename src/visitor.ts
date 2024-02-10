@@ -22,7 +22,7 @@ export class Scope {
 export class ASTVisitor {
     private indentLevel: number = 0;
     private currentScope: Scope = new Scope();
-    private externVariables: Map<string, ExternVariableType> = new Map();
+    public externVariables: Map<string, ExternVariableType> = new Map();
     public span2Scope: [Span, Scope][] = [];
 
     constructor(private root: ParserNode) {}
