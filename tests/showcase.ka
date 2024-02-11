@@ -55,4 +55,4 @@ class Testing do
     end
 end
 
-Testing()
+new Testing()

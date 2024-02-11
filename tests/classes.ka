@@ -16,6 +16,6 @@ class TrainCart do
     end
 end
 
-train = TrainCart("front") + TrainCart("middle") + TrainCart("back")
+train = new TrainCart("front") + new TrainCart("middle") + new TrainCart("back")
 
 train.log() # front -> middle -> back

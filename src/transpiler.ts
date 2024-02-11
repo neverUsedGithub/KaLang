@@ -8,9 +8,7 @@ function getIndent(level: number) {
     return "    ".repeat(level);
 }
 
-interface VariableMetadata {
-    isClass: boolean;
-}
+interface VariableMetadata {}
 
 export class Scope {
     private variables: Map<string, VariableMetadata> = new Map();
@@ -21,9 +19,9 @@ export class Scope {
         return this.variables.has(name) || (this.parent ? this.parent.has(name) : false);
     }
 
-    add(name: string, isClass: boolean, isLocal: boolean = false) {
+    add(name: string, isLocal: boolean = false) {
         if (!isLocal && this.has(name)) return;
-        this.variables.set(name, { isClass });
+        this.variables.set(name, {});
     }
 
     get(name: string) {
@@ -86,16 +84,7 @@ export class Transpiler {
                 )})`;
 
             case "functionCall":
-                let classMaker = "";
-
-                if (node.fn.type === "variableAccess") {
-                    if (
-                        this.currentScope.get(node.fn.name)?.isClass ||
-                        this.externVariables.get(node.fn.name) === ExternVariableType.CLASS
-                    )
-                        classMaker = "new ";
-                }
-                return `${classMaker}${this.visit(node.fn)}(${this.visitJoined(node.arguments, ", ")})`;
+                return `${this.visit(node.fn)}(${this.visitJoined(node.arguments, ", ")})`;
 
             case "lambdaFunction": {
                 this.indentLevel++;
@@ -121,8 +110,8 @@ export class Transpiler {
 
             case "variableAssign":
                 if (node.name.type === "variableAccess")
-                    if (!this.externVariables.has(node.name.name))
-                        this.currentScope.add(node.name.name, false, node.isLocal);
+                    if (node.isLocal || !this.externVariables.has(node.name.name))
+                        this.currentScope.add(node.name.name, node.isLocal);
                 return `${getVariableName(node.name)} = ${this.visit(node.value)}`;
 
             case "expressionStatement":
@@ -136,8 +125,6 @@ export class Transpiler {
 
                 let vars = "";
                 for (const variable of this.currentScope.list()) {
-                    if (variable.meta.isClass) continue;
-
                     vars += `${getIndent(this.indentLevel)}let ${variable.name};\n`;
                 }
 
@@ -177,7 +164,7 @@ export class Transpiler {
             }
 
             case "forStatement":
-                if (!this.externVariables.has(node.variable.value)) this.currentScope.add(node.variable.value, false);
+                if (!this.externVariables.has(node.variable.value)) this.currentScope.add(node.variable.value);
                 return `${getIndent(this.indentLevel++)}for (${node.variable.value} of ${this.visit(
                     node.iterable
                 )}) {\n${this.visit(node.body)}\n${getIndent(--this.indentLevel)}}`;
@@ -209,7 +196,6 @@ export class Transpiler {
                 )}\n${getIndent(--this.indentLevel)}}`;
 
             case "classDeclaration":
-                this.currentScope.add(node.name, true);
                 return `${getIndent(this.indentLevel++)}class ${node.name} {\n${node.methods
                     .map((m) => this.visit(m))
                     .join("\n")}\n${getIndent(--this.indentLevel)}}`;
@@ -217,6 +203,9 @@ export class Transpiler {
             case "externDeclaration":
                 this.externVariables.set(node.name, node.varType);
                 return "";
+
+            case "newExpression":
+                return `new ${this.visit(node.expr)}`;
 
             case "program": {
                 const genBody = this.visitJoined(node.body, "\n");
@@ -244,8 +233,6 @@ const ${BUILTIN_OPERATORS} = {\n`;
 
                 let vars = "";
                 for (const variable of this.currentScope.list()) {
-                    if (variable.meta.isClass) continue;
-
                     vars += `let ${variable.name};\n`;
                 }
 

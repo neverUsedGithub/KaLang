@@ -12,7 +12,8 @@ const KEYWORDS = [
     "return",
     "class",
     "extern",
-    "local"
+    "local",
+    "new"
 ];
 const SKIP = " \t\r\n";
 

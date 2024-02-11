@@ -98,7 +98,7 @@ export class ASTVisitor {
 
             case "variableAssign":
                 if (node.name.type === "variableAccess")
-                    if (!this.externVariables.has(node.name.name))
+                    if (node.isLocal || !this.externVariables.has(node.name.name))
                         this.currentScope.addSymbol("variable", node.name.name, node.span.start, node.isLocal);
 
                 this.visit(node.name);
@@ -167,6 +167,10 @@ export class ASTVisitor {
 
             case "methodDeclaration":
                 this.visit(node.body);
+                return;
+
+            case "newExpression":
+                this.visit(node.expr);
                 return;
 
             case "program": {

@@ -128,13 +128,16 @@ export interface MethodDeclarationNode extends BaseNode<"methodDeclaration"> {
 }
 
 export enum ExternVariableType {
-    CLASS,
     VARIABLE,
 }
 
 export interface ExternDeclarationNode extends BaseNode<"externDeclaration"> {
     name: string;
     varType: ExternVariableType;
+}
+
+export interface NewExpressionNode extends BaseNode<"newExpression"> {
+    expr: ParserNode;
 }
 
 export type ParserNode =
@@ -158,7 +161,8 @@ export type ParserNode =
     | ReturnStatementNode
     | ClassDeclarationNode
     | MethodDeclarationNode
-    | ExternDeclarationNode;
+    | ExternDeclarationNode
+    | NewExpressionNode;
 
 function isAssignable(expr: ParserNode): boolean {
     if (expr.type === "binaryExpression" && expr.operator.value === ".")
@@ -262,6 +266,20 @@ export class Parser {
             } satisfies NumberNode;
         }
 
+        if (this.is(TokenType.KEYWORD, "new")) {
+            const start = this.eat(TokenType.KEYWORD, "new").span.start;
+            const expr = this.parseExpressionInner(this.parsePrimary(), PRECEDENCES["fn"]);
+
+            if (expr.type !== "functionCall") throw new ParsingError("not a constructor", expr.span);
+
+            return {
+                type: "newExpression",
+                expr,
+
+                span: new Span(start, expr.span.end),
+            };
+        }
+
         if (this.is(TokenType.IDENTIFIER)) {
             const ident = this.eat(TokenType.IDENTIFIER);
             return {
@@ -326,8 +344,6 @@ export class Parser {
                     arguments: args,
                     span: new Span(lhs.span.start, end),
                 } satisfies FunctionCallNode;
-
-                continue;
             } else {
                 const op = this.eat(TokenType.OPERATOR);
                 const prec = PRECEDENCES[op.value as keyof typeof PRECEDENCES];
@@ -386,6 +402,8 @@ export class Parser {
         return {
             ...name,
             isLocal: true,
+
+            span: new Span(start, name.span.end),
         } satisfies VariableAssignNode;
     }
 
@@ -634,16 +652,8 @@ export class Parser {
 
     private parseExternDeclaration() {
         const start = this.eat(TokenType.KEYWORD, "extern").span.start;
-        let type = ExternVariableType.VARIABLE;
-        let name: Token;
-
-        if (this.is(TokenType.KEYWORD, "class")) {
-            this.eat(TokenType.KEYWORD, "class");
-            type = ExternVariableType.CLASS;
-            name = this.eat(TokenType.IDENTIFIER);
-        } else {
-            name = this.eat(TokenType.IDENTIFIER);
-        }
+        const type = ExternVariableType.VARIABLE;
+        const name = this.eat(TokenType.IDENTIFIER);
 
         return {
             type: "externDeclaration",
