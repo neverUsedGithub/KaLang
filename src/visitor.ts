@@ -173,6 +173,10 @@ export class ASTVisitor {
                 this.visit(node.expr);
                 return;
 
+            case "fieldDeclaration":
+                this.visit(node.value);
+                return;
+
             case "program": {
                 node.body.map((node) => this.visit(node));
                 return;

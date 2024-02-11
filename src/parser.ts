@@ -127,6 +127,11 @@ export interface MethodDeclarationNode extends BaseNode<"methodDeclaration"> {
     parameters: string[];
 }
 
+export interface FieldDeclarationNode extends BaseNode<"fieldDeclaration"> {
+    name: Token;
+    value: ParserNode;
+}
+
 export enum ExternVariableType {
     VARIABLE,
 }
@@ -162,7 +167,8 @@ export type ParserNode =
     | ClassDeclarationNode
     | MethodDeclarationNode
     | ExternDeclarationNode
-    | NewExpressionNode;
+    | NewExpressionNode
+    | FieldDeclarationNode;
 
 function isAssignable(expr: ParserNode): boolean {
     if (expr.type === "binaryExpression" && expr.operator.value === ".")
@@ -301,9 +307,18 @@ export class Parser {
                 if (this.is(TokenType.IDENTIFIER)) field = this.eat(TokenType.IDENTIFIER).value;
                 else field = this.eat(TokenType.STRING).value;
 
-                this.eat(TokenType.DELIMITER, ":");
+                if (this.is(TokenType.KEYWORD, "do")) {
+                    const fn = this.parseExpression();
 
-                fields[field] = this.parseExpression();
+                    if (fn.type !== "lambdaFunction")
+                        throw new ParsingError("expected a function declaration", fn.span);
+
+                    fields[field] = fn;
+                } else {
+                    this.eat(TokenType.DELIMITER, ":");
+
+                    fields[field] = this.parseExpression();
+                }
             }
 
             const end = this.eat(TokenType.DELIMITER, "}").span.end;
@@ -629,14 +644,32 @@ export class Parser {
         } satisfies MethodDeclarationNode;
     }
 
+    private parseFieldDeclaration() {
+        const name = this.eat(TokenType.IDENTIFIER);
+        this.eat(TokenType.EQUALS);
+        const value = this.parseExpression();
+
+        return {
+            type: "fieldDeclaration",
+            name,
+            value,
+
+            span: new Span(name.span.start, value.span.end),
+        } satisfies FieldDeclarationNode;
+    }
+
     private parseClassDeclaration() {
         const start = this.eat(TokenType.KEYWORD, "class").span.start;
         const name = this.eat(TokenType.IDENTIFIER).value;
-        const methods: MethodDeclarationNode[] = [];
+        const methods: (MethodDeclarationNode | FieldDeclarationNode)[] = [];
         this.eat(TokenType.KEYWORD, "do");
 
         while (!this.is(TokenType.KEYWORD, "end")) {
-            methods.push(this.parseMethodDeclaration());
+            if (this.pos + 1 < this.tokens.length && this.tokens[this.pos + 1].type === TokenType.EQUALS) {
+                methods.push(this.parseFieldDeclaration());
+            } else {
+                methods.push(this.parseMethodDeclaration());
+            }
         }
 
         const end = this.eat(TokenType.KEYWORD, "end").span.end;

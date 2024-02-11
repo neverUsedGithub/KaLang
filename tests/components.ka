@@ -1,0 +1,12 @@
+function component do
+    return {
+        id: "test",
+
+        add do
+            this.foo = "bar"
+        end,
+
+        update do
+        end
+    }
+end

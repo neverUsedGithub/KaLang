@@ -4,8 +4,8 @@ end
 
 array = [ 1, 2, 3 ]
 j = 0
-while j < 5 do
-    console.log("j < 5")
+while j < array.length do
+    console.log(array.at(j))
 
     j = j + 1
 end

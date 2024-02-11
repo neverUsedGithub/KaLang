@@ -1,4 +1,6 @@
 class TrainCart do
+    foo = "bar"
+
     __init__(name) do
         this.name = name
         this.parts = []

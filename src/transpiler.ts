@@ -207,6 +207,9 @@ export class Transpiler {
             case "newExpression":
                 return `new ${this.visit(node.expr)}`;
 
+            case "fieldDeclaration":
+                return `${getIndent(this.indentLevel)}${node.name.value} = ${this.visit(node.value)};`;
+
             case "program": {
                 const genBody = this.visitJoined(node.body, "\n");
                 let generated = `const ${BUILTIN_RANGE} = (start, end) => {
