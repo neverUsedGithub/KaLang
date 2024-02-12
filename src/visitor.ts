@@ -79,7 +79,14 @@ export class ASTVisitor {
                 return;
 
             case "lambdaFunction": {
+                this.currentScope = new Scope(this.currentScope);
+
+                for (const param of node.parameters)
+                    this.currentScope.addSymbol("variable", param.value, node.span.start, true);
+
                 this.visit(node.body);
+
+                this.currentScope = this.currentScope.parent!;
                 return;
             }
 
@@ -148,8 +155,14 @@ export class ASTVisitor {
 
             case "functionDeclaration":
                 this.currentScope.addSymbol("function", node.name, node.span.start);
+                this.currentScope = new Scope(this.currentScope);
+
+                for (const param of node.parameters)
+                    this.currentScope.addSymbol("variable", param, node.span.start, true);
+
                 this.visit(node.body);
 
+                this.currentScope = this.currentScope.parent!;
                 return;
 
             case "returnStatement":
@@ -166,7 +179,14 @@ export class ASTVisitor {
                 return;
 
             case "methodDeclaration":
+                this.currentScope = new Scope(this.currentScope);
+
+                for (const param of node.parameters)
+                    this.currentScope.addSymbol("variable", param, node.span.start, true);
+
                 this.visit(node.body);
+
+                this.currentScope = this.currentScope.parent!;
                 return;
 
             case "newExpression":
@@ -175,6 +195,12 @@ export class ASTVisitor {
 
             case "fieldDeclaration":
                 this.visit(node.value);
+                return;
+
+            case "breakStatement":
+                return;
+
+            case "continueStatement":
                 return;
 
             case "program": {

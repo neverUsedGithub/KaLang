@@ -6,7 +6,7 @@ class TrainCart do
         this.parts = []
     end
 
-    log() do
+    log do
         console.log(this.name, "->", this.parts.map(with cart do
             return cart.name
         end).join(" -> "))

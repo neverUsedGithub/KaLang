@@ -9,3 +9,9 @@ while j < array.length do
 
     j = j + 1
 end
+
+while true do
+    break
+
+    process.exit(1)
+end

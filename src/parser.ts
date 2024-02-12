@@ -145,6 +145,9 @@ export interface NewExpressionNode extends BaseNode<"newExpression"> {
     expr: ParserNode;
 }
 
+export interface BreakStatementNode extends BaseNode<"breakStatement"> {}
+export interface ContinueStatementNode extends BaseNode<"continueStatement"> {}
+
 export type ParserNode =
     | ProgramNode
     | StringNode
@@ -168,7 +171,9 @@ export type ParserNode =
     | MethodDeclarationNode
     | ExternDeclarationNode
     | NewExpressionNode
-    | FieldDeclarationNode;
+    | FieldDeclarationNode
+    | BreakStatementNode
+    | ContinueStatementNode;
 
 function isAssignable(expr: ParserNode): boolean {
     if (expr.type === "binaryExpression" && expr.operator.value === ".")
@@ -614,14 +619,16 @@ export class Parser {
         const params: string[] = [];
         const body: ParserNode[] = [];
 
-        this.eat(TokenType.DELIMITER, "(");
+        if (!this.is(TokenType.KEYWORD, "do")) {
+            this.eat(TokenType.DELIMITER, "(");
 
-        while (!this.is(TokenType.DELIMITER, ")")) {
-            if (params.length > 0) this.eat(TokenType.DELIMITER, ",");
-            params.push(this.eat(TokenType.IDENTIFIER).value);
+            while (!this.is(TokenType.DELIMITER, ")")) {
+                if (params.length > 0) this.eat(TokenType.DELIMITER, ",");
+                params.push(this.eat(TokenType.IDENTIFIER).value);
+            }
+
+            this.eat(TokenType.DELIMITER, ")");
         }
-
-        this.eat(TokenType.DELIMITER, ")");
         const bodyStart = this.eat(TokenType.KEYWORD, "do").span.start;
 
         while (!this.is(TokenType.KEYWORD, "end")) {
@@ -697,6 +704,24 @@ export class Parser {
         } satisfies ExternDeclarationNode;
     }
 
+    private parseBreakStatement() {
+        const stat = this.eat(TokenType.KEYWORD, "break");
+
+        return {
+            type: "breakStatement",
+            span: stat.span,
+        } satisfies BreakStatementNode;
+    }
+
+    private parseContinueStatement() {
+        const stat = this.eat(TokenType.KEYWORD, "continue");
+
+        return {
+            type: "continueStatement",
+            span: stat.span,
+        } satisfies ContinueStatementNode;
+    }
+
     private parseStatement() {
         if (this.is(TokenType.KEYWORD, "if")) {
             return this.parseIfStatement();
@@ -728,6 +753,14 @@ export class Parser {
 
         if (this.is(TokenType.KEYWORD, "local")) {
             return this.parseLocalStatement();
+        }
+
+        if (this.is(TokenType.KEYWORD, "break")) {
+            return this.parseBreakStatement();
+        }
+
+        if (this.is(TokenType.KEYWORD, "continue")) {
+            return this.parseContinueStatement();
         }
 
         const expr = this.parseExpression();

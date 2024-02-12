@@ -87,11 +87,17 @@ export class Transpiler {
                 return `${this.visit(node.fn)}(${this.visitJoined(node.arguments, ", ")})`;
 
             case "lambdaFunction": {
+                const prev = this.currentScope;
+                this.currentScope = new Scope(prev);
+                for (const param of node.parameters) this.currentScope.add(param.value, true);
+
                 this.indentLevel++;
                 const out = `function(${node.parameters.map((tok) => tok.value).join(", ")}) {\n${this.visit(
                     node.body
                 )}\n${getIndent(this.indentLevel - 1)}}`;
                 this.indentLevel--;
+
+                this.currentScope = prev;
 
                 return out;
             }
@@ -174,26 +180,42 @@ export class Transpiler {
                     node.body
                 )}\n${getIndent(--this.indentLevel)}}`;
 
-            case "functionDeclaration":
-                return `${getIndent(this.indentLevel++)}function ${node.name}(${node.parameters.join(
+            case "functionDeclaration": {
+                const prev = this.currentScope;
+                this.currentScope = new Scope(prev);
+                for (const param of node.parameters) this.currentScope.add(param, true);
+
+                const out = `${getIndent(this.indentLevel++)}function ${node.name}(${node.parameters.join(
                     ", "
                 )}) {\n${this.visit(node.body)}\n${getIndent(--this.indentLevel)}}`;
+
+                this.currentScope = prev;
+                return out;
+            }
 
             case "returnStatement":
                 return `${getIndent(this.indentLevel)}return${
                     node.expression ? " " + this.visit(node.expression) : ""
                 };`;
 
-            case "methodDeclaration":
+            case "methodDeclaration": {
+                const prev = this.currentScope;
+                this.currentScope = new Scope(prev);
+                for (const param of node.parameters) this.currentScope.add(param, true);
+
                 const name =
                     node.name.type === TokenType.OPERATOR
                         ? `"${node.name.value}"`
                         : node.name.value === "__init__"
                         ? "constructor"
                         : node.name.value;
-                return `${getIndent(this.indentLevel++)}${name}(${node.parameters.join(", ")}) {\n${this.visit(
+                const out = `${getIndent(this.indentLevel++)}${name}(${node.parameters.join(", ")}) {\n${this.visit(
                     node.body
                 )}\n${getIndent(--this.indentLevel)}}`;
+
+                this.currentScope = prev;
+                return out;
+            }
 
             case "classDeclaration":
                 return `${getIndent(this.indentLevel++)}class ${node.name} {\n${node.methods
@@ -209,6 +231,12 @@ export class Transpiler {
 
             case "fieldDeclaration":
                 return `${getIndent(this.indentLevel)}${node.name.value} = ${this.visit(node.value)};`;
+
+            case "breakStatement":
+                return `${getIndent(this.indentLevel)}break;`;
+
+            case "continueStatement":
+                return `${getIndent(this.indentLevel)}continue;`;
 
             case "program": {
                 const genBody = this.visitJoined(node.body, "\n");
