@@ -15,7 +15,7 @@ const KEYWORDS = [
     "local",
     "new",
     "break",
-    "continue"
+    "continue",
 ];
 const SKIP = " \t\r\n";
 
@@ -47,7 +47,7 @@ const OPERATOR_DISPLAY: { [text: string]: (typeof OPERATORS)[number] } = {
     and: "&&",
     or: "||",
     "..": "..",
-    ".": "."
+    ".": ".",
 };
 
 const SINGLE_TOKENS = {
@@ -147,11 +147,26 @@ export class Lexer {
             let end = start;
             this.advance();
 
-            while (this.pos < this.content.length && NUMBER_REGEX.test(this.content[this.pos])) {
+            while (
+                (this.pos < this.content.length && NUMBER_REGEX.test(this.content[this.pos])) ||
+                this.content[this.pos] === "."
+            ) {
+                if (
+                    this.content[this.pos] === "." &&
+                    this.pos + 1 < this.content.length &&
+                    this.content[this.pos + 1] === "."
+                )
+                    break;
+
+                if (this.content[this.pos] === "." && number.includes("."))
+                    throw new LexingError("unexpected '.'", this.getPosition());
+
                 number += this.content[this.pos];
                 end = this.getPosition();
                 this.advance();
             }
+
+            if (number[number.length - 1] === ".") throw new LexingError("cannot end float with '.'", end);
 
             return new Token(TokenType.NUMBER, number, new Span(start, end));
         }

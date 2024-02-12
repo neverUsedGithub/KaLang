@@ -1,0 +1,7 @@
+string = "string"
+number = 123
+number2 = 123.456
+object = {
+    key: "value"
+}
+array = [ "1", 2, [ "three" ] ]
