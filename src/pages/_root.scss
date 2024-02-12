@@ -1,0 +1,84 @@
+
+.app-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  background: var(--bg-default);
+  border-bottom: 2px solid var(--outline-default);
+  margin: 0;
+
+  .content {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 16px 32px;
+    gap: 16px;
+    margin: 0 auto;
+    max-width: var(--max-content-width);
+  }
+
+  .nav-item {
+    border-radius: 8px;
+    padding: 4px 12px;
+    transition: background 0.2s;
+
+    &:hover {
+      background: var(--bg-higher);
+    }
+
+    &.current {
+      outline: 2px solid var(--color-blue);
+    }
+  }
+
+  .nav-title {
+    padding: 4px 12px;
+    font-weight: bold;
+    font-family: var(--font-title);
+    flex: 1;
+    color: var(--fg-default);
+  }
+
+  .hamburger-button {
+    background: var(--bg-higher);
+    border: none;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+  }
+
+  .hamburger-button:active {
+    outline: 2px solid var(--color-blue);
+  }
+}
+
+.nav-items-floating {
+  z-index: 100;
+  position: fixed;
+  left: calc(clamp(0px, 100vw, var(--max-content-width)) - 32px);
+  transform: translateX(-100%);
+  top: calc(var(--navbar-height) - 1px);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-default);
+  border: 1px solid var(--outline-default);
+  gap: 2px;
+  cursor: pointer;
+
+  .nav-item {
+    padding: 12px 12px;
+    white-space: nowrap;
+    border-radius: 0;
+
+    &.current {
+      outline: 2px solid var(--color-blue);
+    }
+  }
+}
+
+main {
+  padding-top: var(--navbar-height);
+}

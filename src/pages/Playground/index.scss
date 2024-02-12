@@ -1,0 +1,32 @@
+.router-page.playground {
+  padding-top: var(--navbar-height);
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+
+  .editor {
+    display: flex;
+    flex: 1;
+    border-right: 1px solid var(--outline-default);
+    max-width: 50%;
+  }
+  
+  .canvas {
+    flex: 1;
+    border-bottom: 1px solid var(--outline-default);
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+  }
+
+  @media screen and (max-width: 600px) {
+    flex-direction: column;
+
+    .editor {
+      max-width: unset;
+    }
+  }
+}

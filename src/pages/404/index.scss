@@ -1,0 +1,15 @@
+.router-page.error {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+
+    h1 {
+        font-family: var(--font-title);
+    }
+    
+    p {
+        color: var(--fg-dimmer);
+    }
+}

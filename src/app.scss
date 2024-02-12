@@ -1,0 +1,84 @@
+:root {
+  --font-title: "Indie Flower";
+  --font-text: Poppins;
+  --font-mono: "JetBrains Mono";
+
+  --bg-root: #22222e;
+  --bg-default: #32323e;
+  --bg-higher: #42424e;
+
+  --outline-default: #52525e;
+
+  --fg-default: #e2e2e2;
+  --fg-dimmer: #a2a2a2;
+
+  --color-blue: #74affc;
+
+  --color-highlight: #74affc;
+
+  --hl-keyword: #c688ff;
+  --hl-function-call: #ff6969;
+  --hl-builtin: #ffe988;
+  --hl-string: #bef38d;
+  --hl-comment: #4f4f66;
+  --hl-number: #ffbf35;
+  --hl-boolean: #ffbf35;
+  --hl-operator: #7cd3fc;
+
+  --max-content-width: 1000px;
+  --navbar-height: 67px;
+}
+
+* {
+  box-sizing: border-box;
+  color: var(--fg-default);
+}
+
+html,
+body,
+#root,
+main {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg-root);
+  font-family: var(--font-text);
+}
+
+html {
+  overflow-y: scroll;
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0 auto;
+  max-width: var(--max-content-width);
+  padding: 32px;
+
+  @media screen and (max-width: 550px) {
+    margin: 0;
+    max-width: unset;
+  }
+}
+
+a {
+  text-decoration: none;
+  color: var(--color-blue);
+}
+
+p {
+  color: var(--fg-dimmer);
+}
+
+pre {
+  background: var(--bg-default);
+  border: 1px solid var(--outline-default);
+  border-radius: 8px;
+  padding: 8px;
+  margin: 0;
+}
+
+pre > code {
+  font-family: var(--font-mono);
+}
