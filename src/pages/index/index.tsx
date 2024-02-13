@@ -85,7 +85,7 @@ main()`}
               </a>
             </li>
             <li>
-              <a href="https://github.com/neverUsedGithub/KaLang-Site">
+              <a href="https://github.com/neverUsedGithub/KaLang/tree/www">
                 The source code of the site you are currently looking at.
               </a>
             </li>
