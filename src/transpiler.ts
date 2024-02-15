@@ -158,6 +158,7 @@ export class Transpiler {
 
                 let generated = "{" + sep;
 
+                this.indentLevel++;
                 for (let i = 0; i < fieldKeys.length; i++) {
                     generated += `${indent}"${fieldKeys[i].replaceAll('"', '\\"')}": ${this.visit(
                         node.fields[fieldKeys[i]]
@@ -165,6 +166,7 @@ export class Transpiler {
 
                     if (i !== fieldKeys.length - 1) generated += "," + sep;
                 }
+                this.indentLevel--;
 
                 return generated + sep + "}";
             }
