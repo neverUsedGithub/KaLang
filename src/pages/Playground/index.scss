@@ -7,13 +7,12 @@
   .editor {
     display: flex;
     flex: 1;
-    border-right: 1px solid var(--outline-default);
+    border-right: 2px solid var(--outline-default);
     max-width: 50%;
   }
   
   .canvas {
     flex: 1;
-    border-bottom: 1px solid var(--outline-default);
 
     iframe {
       width: 100%;
@@ -27,6 +26,9 @@
 
     .editor {
       max-width: unset;
+      max-height: 50%;
+      border-right: none;
+      border-bottom: 2px solid var(--outline-default);
     }
   }
 }
