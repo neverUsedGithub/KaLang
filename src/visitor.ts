@@ -203,6 +203,17 @@ export class ASTVisitor {
             case "continueStatement":
                 return;
 
+            case "exportStatement":
+                this.visit(node.expression);
+                return;
+
+            case "importStatement": {
+                for (const name of node.imports)
+                    this.currentScope.addSymbol("variable", name.value, node.span.start, true);
+
+                return;
+            }
+
             case "program": {
                 node.body.map((node) => this.visit(node));
                 return;

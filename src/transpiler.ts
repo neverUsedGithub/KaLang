@@ -1,5 +1,5 @@
-import { OPERATORS, TokenType } from "./lexer";
-import { ExternVariableType, ParserNode } from "./parser";
+import { OPERATORS, Span, TokenType } from "./lexer";
+import { ExternVariableType, ImportStatementNode, ImportType, ParserNode } from "./parser";
 
 const BUILTIN_OPERATORS = "__kaOperators";
 const BUILTIN_RANGE = "__kaGetRange";
@@ -8,7 +8,15 @@ function getIndent(level: number) {
     return "    ".repeat(level);
 }
 
-interface VariableMetadata {}
+interface VariableMetadata {
+    isExport: boolean;
+}
+
+export class TranspilingError extends Error {
+    constructor(public reason: string, public span: Span) {
+        super(reason);
+    }
+}
 
 export class Scope {
     private variables: Map<string, VariableMetadata> = new Map();
@@ -19,9 +27,9 @@ export class Scope {
         return this.variables.has(name) || (this.parent ? this.parent.has(name) : false);
     }
 
-    add(name: string, isLocal: boolean = false) {
+    add(name: string, meta: VariableMetadata, isLocal: boolean = false) {
         if (!isLocal && this.has(name)) return;
-        this.variables.set(name, {});
+        this.variables.set(name, meta);
     }
 
     get(name: string) {
@@ -40,12 +48,47 @@ function getVariableName(expr: ParserNode): string {
     throw new Error("getVariableName called on invalid node");
 }
 
+// Portable to web
+export interface FsProvider {
+    exists(path: string): boolean;
+}
+
+function joinPaths(...paths: string[]): string {
+    let joined = "";
+
+    for (let path of paths) {
+        if (joined.length !== 0) joined += "/";
+
+        while (path.startsWith("/")) path = path.substring(1);
+        while (path.endsWith("/")) path = path.substring(0, path.length - 1);
+        joined += path;
+    }
+
+    return joined;
+}
+
+function dirname(path: string) {
+    return path.substring(0, path.lastIndexOf("/"));
+}
+
+function resolveImportStatement(path: string, node: ImportStatementNode, fs: FsProvider | null): string {
+    if (!fs) throw new TranspilingError("cannot use import statement without an fs provider", node.span);
+    path = path.replaceAll("\\", "/");
+
+    const joinedPath = node.source.map((tok) => tok.value).join("/");
+    const modulePath = joinPaths(dirname(path), joinedPath);
+
+    if (fs.exists(modulePath + ".ka")) return "./" + joinedPath + ".js";
+
+    return joinedPath;
+}
+
 export class Transpiler {
     private indentLevel: number = 0;
     private currentScope: Scope = new Scope();
     private externVariables: Map<string, ExternVariableType> = new Map();
 
-    constructor(private root: ParserNode) {}
+    constructor(private root: ParserNode, private file: string, private fs: FsProvider | null) {}
 
     public transpile(): string {
         return this.visit(this.root);
@@ -89,7 +132,7 @@ export class Transpiler {
             case "lambdaFunction": {
                 const prev = this.currentScope;
                 this.currentScope = new Scope(prev);
-                for (const param of node.parameters) this.currentScope.add(param.value, true);
+                for (const param of node.parameters) this.currentScope.add(param.value, { isExport: false }, true);
 
                 this.indentLevel++;
                 const out = `function(${node.parameters.map((tok) => tok.value).join(", ")}) {\n${this.visit(
@@ -117,7 +160,7 @@ export class Transpiler {
             case "variableAssign":
                 if (node.name.type === "variableAccess")
                     if (node.isLocal || !this.externVariables.has(node.name.name))
-                        this.currentScope.add(node.name.name, node.isLocal);
+                        this.currentScope.add(node.name.name, { isExport: false }, node.isLocal);
                 return `${getVariableName(node.name)} = ${this.visit(node.value)}`;
 
             case "expressionStatement":
@@ -131,6 +174,7 @@ export class Transpiler {
 
                 let vars = "";
                 for (const variable of this.currentScope.list()) {
+                    if (variable.meta.isExport) continue;
                     vars += `${getIndent(this.indentLevel)}let ${variable.name};\n`;
                 }
 
@@ -172,7 +216,8 @@ export class Transpiler {
             }
 
             case "forStatement":
-                if (!this.externVariables.has(node.variable.value)) this.currentScope.add(node.variable.value);
+                if (!this.externVariables.has(node.variable.value))
+                    this.currentScope.add(node.variable.value, { isExport: false });
                 return `${getIndent(this.indentLevel++)}for (${node.variable.value} of ${this.visit(
                     node.iterable
                 )}) {\n${this.visit(node.body)}\n${getIndent(--this.indentLevel)}}`;
@@ -185,7 +230,7 @@ export class Transpiler {
             case "functionDeclaration": {
                 const prev = this.currentScope;
                 this.currentScope = new Scope(prev);
-                for (const param of node.parameters) this.currentScope.add(param, true);
+                for (const param of node.parameters) this.currentScope.add(param, { isExport: false }, true);
 
                 const out = `${getIndent(this.indentLevel++)}function ${node.name}(${node.parameters.join(
                     ", "
@@ -203,7 +248,7 @@ export class Transpiler {
             case "methodDeclaration": {
                 const prev = this.currentScope;
                 this.currentScope = new Scope(prev);
-                for (const param of node.parameters) this.currentScope.add(param, true);
+                for (const param of node.parameters) this.currentScope.add(param, { isExport: false }, true);
 
                 const name =
                     node.name.type === TokenType.OPERATOR
@@ -240,9 +285,48 @@ export class Transpiler {
             case "continueStatement":
                 return `${getIndent(this.indentLevel)}continue;`;
 
+            case "importStatement": {
+                const resolved = resolveImportStatement(this.file, node, this.fs);
+                const names = node.imports.map((tok) => tok.value).join(", ");
+
+                switch (node.importType) {
+                    case ImportType.Module:
+                        return `${getIndent(this.indentLevel)}import * as ${names} from "${resolved}";`;
+
+                    case ImportType.Default:
+                        return `${getIndent(this.indentLevel)}import ${names} from "${resolved}";`;
+
+                    case ImportType.Specified:
+                        return `${getIndent(this.indentLevel)}import { ${names} } from "${resolved}";`;
+
+                    default:
+                        node.importType satisfies never;
+                        throw new Error("unimplemented import type");
+                }
+            }
+
+            case "exportStatement": {
+                let isVar = false;
+
+                if (node.expression.type === "variableAssign") {
+                    if (node.expression.name.type !== "variableAccess")
+                        throw new TranspilingError("can't export this type of expression", node.expression.name.span);
+
+                    if (this.currentScope.has(node.expression.name.name))
+                        throw new TranspilingError(
+                            "can't export a variable after it has already been used",
+                            node.expression.span
+                        );
+
+                    isVar = true;
+                    this.currentScope.add(node.expression.name.name, { isExport: true });
+                }
+                return `${getIndent(this.indentLevel)}export ${isVar ? "let " : ""}${this.visit(node.expression)};`;
+            }
+
             case "program": {
                 const genBody = this.visitJoined(node.body, "\n");
-                let generated = `const ${BUILTIN_RANGE} = (start, end) => {
+                let generated = `function ${BUILTIN_RANGE}(start, end) {
     const out = [];
     for (let i = start; i < end; i++) {
         out.push(i);
@@ -266,6 +350,7 @@ const ${BUILTIN_OPERATORS} = {\n`;
 
                 let vars = "";
                 for (const variable of this.currentScope.list()) {
+                    if (variable.meta.isExport) continue;
                     vars += `let ${variable.name};\n`;
                 }
 

@@ -16,6 +16,10 @@ const KEYWORDS = [
     "new",
     "break",
     "continue",
+    "import",
+    "from",
+    "default",
+    "export"
 ];
 const SKIP = " \t\r\n";
 

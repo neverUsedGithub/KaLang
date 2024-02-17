@@ -1,8 +1,9 @@
 import { LexingError, Span } from "./lexer";
 import { ParsingError } from "./parser";
+import { TranspilingError } from "./transpiler";
 
 export class ErrorFormatter {
-    constructor(private error: LexingError | ParsingError) {}
+    constructor(private error: LexingError | ParsingError | TranspilingError) {}
 
     format(source: string, filename: string): string {
         let span: Span;
@@ -13,7 +14,7 @@ export class ErrorFormatter {
             errorType = "Lexer";
         } else {
             span = this.error.span;
-            errorType = "Parser";
+            errorType = this.error instanceof ParsingError ? "Parser" : "Transpiling";
         }
 
         const lines = source.replaceAll("\r\n", "\n").split("\n");

@@ -1,6 +1,6 @@
 {
     "name": "kalang",
-    "version": "0.0.15",
+    "version": "0.0.16",
     "description": "A programming language designed to make game development fast and fun!",
     "main": "index.js",
     "bin": {
@@ -55,6 +55,7 @@
     },
     "dependencies": {
         "@types/node": "^20.11.5",
-        "commander": "^11.1.0"
+        "commander": "^11.1.0",
+        "glob": "^10.3.10"
     }
 }

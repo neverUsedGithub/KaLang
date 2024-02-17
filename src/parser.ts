@@ -148,6 +148,22 @@ export interface NewExpressionNode extends BaseNode<"newExpression"> {
 export interface BreakStatementNode extends BaseNode<"breakStatement"> {}
 export interface ContinueStatementNode extends BaseNode<"continueStatement"> {}
 
+export enum ImportType {
+    Module,
+    Default,
+    Specified,
+}
+
+export interface ImportStatementNode extends BaseNode<"importStatement"> {
+    source: Token[];
+    imports: Token[];
+    importType: ImportType;
+}
+
+export interface ExportStatementNode extends BaseNode<"exportStatement"> {
+    expression: ParserNode;
+}
+
 export type ParserNode =
     | ProgramNode
     | StringNode
@@ -173,7 +189,9 @@ export type ParserNode =
     | NewExpressionNode
     | FieldDeclarationNode
     | BreakStatementNode
-    | ContinueStatementNode;
+    | ContinueStatementNode
+    | ImportStatementNode
+    | ExportStatementNode;
 
 function isAssignable(expr: ParserNode): boolean {
     if (expr.type === "binaryExpression" && expr.operator.value === ".")
@@ -722,6 +740,84 @@ export class Parser {
         } satisfies ContinueStatementNode;
     }
 
+    private parseImportName(): Token[] {
+        const name: Token[] = [];
+
+        do {
+            name.push(this.eat(TokenType.IDENTIFIER));
+        } while (this.is(TokenType.OPERATOR, "."));
+
+        return name;
+    }
+
+    private parseImportStatement() {
+        if (this.is(TokenType.KEYWORD, "import")) {
+            const start = this.eat(TokenType.KEYWORD, "import").span.start;
+            const name = this.parseImportName();
+
+            return {
+                type: "importStatement",
+                imports: [],
+                source: name,
+                importType: ImportType.Module,
+
+                span: new Span(start, name[name.length - 1].span.end),
+            } satisfies ImportStatementNode;
+        }
+
+        const start = this.eat(TokenType.KEYWORD, "from").span.start;
+        const name = this.parseImportName();
+        let imports: Token[] = [];
+        let type: ImportType;
+
+        this.eat(TokenType.KEYWORD, "import");
+
+        if (this.is(TokenType.KEYWORD, "default")) {
+            type = ImportType.Default;
+
+            this.eat(TokenType.KEYWORD, "default");
+            imports.push(this.eat(TokenType.IDENTIFIER));
+        } else {
+            type = ImportType.Specified;
+
+            do {
+                if (this.is(TokenType.DELIMITER, ",")) this.eat(TokenType.DELIMITER, ",");
+                imports.push(this.eat(TokenType.IDENTIFIER));
+            } while (this.is(TokenType.DELIMITER, ","));
+        }
+
+        return {
+            type: "importStatement",
+            source: name,
+            imports,
+            importType: type,
+
+            span: new Span(start, imports[imports.length - 1].span.end),
+        } satisfies ImportStatementNode;
+    }
+
+    private parseExportStatement() {
+        const start = this.eat(TokenType.KEYWORD, "export").span.start;
+        let expr: ParserNode;
+
+        if (this.is(TokenType.KEYWORD, "function")) expr = this.parseFunctionDeclaratino();
+        else if (this.is(TokenType.KEYWORD, "class")) expr = this.parseClassDeclaration();
+        else expr = this.parseExpression();
+
+        if (expr.type !== "functionDeclaration" && expr.type !== "variableAssign" && expr.type !== "classDeclaration")
+            throw new ParsingError("cannot export this type of expression", expr.span);
+
+        if (expr.type === "variableAssign" && expr.name.type !== "variableAccess")
+            throw new ParsingError("cannot export this type of expression", expr.span);
+
+        return {
+            type: "exportStatement",
+            expression: expr,
+
+            span: new Span(start, expr.span.end),
+        } satisfies ExportStatementNode;
+    }
+
     private parseStatement() {
         if (this.is(TokenType.KEYWORD, "if")) {
             return this.parseIfStatement();
@@ -761,6 +857,14 @@ export class Parser {
 
         if (this.is(TokenType.KEYWORD, "continue")) {
             return this.parseContinueStatement();
+        }
+
+        if (this.is(TokenType.KEYWORD, "import") || this.is(TokenType.KEYWORD, "from")) {
+            return this.parseImportStatement();
+        }
+
+        if (this.is(TokenType.KEYWORD, "export")) {
+            return this.parseExportStatement();
         }
 
         const expr = this.parseExpression();
