@@ -112,6 +112,17 @@ end`}
         </p>
 
         <HighlightedCode code={`extern myVariable`} />
+
+        <h2>Imports/Exports</h2>
+        <p>
+          In KaLang you can easily import and export variables using the 'import' and 'export' keywords.
+        </p>
+
+        <HighlightedCode code={`import mylib
+from mylib import foo, bar
+from mylib import default fizz
+
+export message = "Hello, World!"`} />
       </div>
     </main>
   );

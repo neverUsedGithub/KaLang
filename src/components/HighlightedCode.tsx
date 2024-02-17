@@ -11,7 +11,7 @@ const rules = [
   },
   {
     regex:
-      /\b(function|do|end|with|class|new|if|then|else|for|while|in|continue|break|extern)\b/,
+      /\b(function|do|end|with|class|new|if|then|else|for|while|in|continue|break|extern|import|export|from|default)\b/,
     token: "keyword",
   },
   {
