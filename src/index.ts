@@ -1,4 +1,3 @@
-import { existsSync } from "fs";
 import { ErrorFormatter } from "./error";
 import { Lexer, LexingError } from "./lexer";
 import { Parser, ParsingError } from "./parser";
@@ -12,7 +11,7 @@ export function transpileString(source: string, path?: string, fsProvider?: FsPr
 }
 
 export async function transpileFile(path: string): Promise<string> {
-    const { readFileSync } = await import("fs");
+    const { readFileSync, existsSync } = await import("fs");
     const source = readFileSync(path, { encoding: "utf-8" });
     const tokens = new Lexer(source).lexAll();
     const ast = new Parser(tokens).parse();
