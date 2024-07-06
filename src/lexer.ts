@@ -19,7 +19,7 @@ const KEYWORDS = [
     "import",
     "from",
     "default",
-    "export"
+    "export",
 ];
 const SKIP = " \t\r\n";
 
@@ -32,8 +32,11 @@ export enum TokenType {
     DELIMITER = "DELIMITER",
     OPERATOR = "OPERATOR",
     EQUALS = "EQUALS",
+    ASSIGNMENT_OPERATOR = "ASSIGNMENT_OPERATOR",
 }
 
+export const UNARY_OPERATORS = ["+", "-"] as const;
+export const ASSIGNMENT_OPERATORS = ["+", "-", "*", "/", "%", "&&", "||"] as const;
 export const OPERATORS = ["+", "-", "*", "/", "%", "==", "!=", "<=", ">=", "<", ">", "&&", "||", "..", "."] as const;
 
 const OPERATOR_DISPLAY: { [text: string]: (typeof OPERATORS)[number] } = {
@@ -129,12 +132,21 @@ export class Lexer {
 
             if (this.pos + operator.length >= this.content.length) continue;
             if (this.content.substring(this.pos, this.pos + operator.length) !== operator) continue;
+
             for (let i = 0; i < operator.length; i++) {
                 end = this.getPosition();
                 this.advance();
             }
 
-            return new Token(TokenType.OPERATOR, OPERATOR_DISPLAY[operator], new Span(start, end));
+            let type = TokenType.OPERATOR;
+
+            if (this.content[this.pos] === "=" && ASSIGNMENT_OPERATORS.includes(operator as any)) {
+                end = this.getPosition();
+                type = TokenType.ASSIGNMENT_OPERATOR;
+                this.advance();
+            }
+
+            return new Token(type, OPERATOR_DISPLAY[operator], new Span(start, end));
         }
 
         if (this.content[this.pos] in SINGLE_TOKENS) {

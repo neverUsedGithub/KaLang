@@ -1,4 +1,4 @@
-import { Token, TokenType, Span, OPERATORS, Position } from "./lexer";
+import { Token, TokenType, Span, OPERATORS, Position, UNARY_OPERATORS } from "./lexer";
 
 const PRECEDENCES: { [K in (typeof OPERATORS)[number] | "." | "fn"]: number } = {
     "+": 1,
@@ -67,6 +67,7 @@ export interface VariableAssignNode extends BaseNode<"variableAssign"> {
     name: ParserNode;
     value: ParserNode;
     isLocal: boolean;
+    operator: string;
 }
 
 export interface ArrayNode extends BaseNode<"array"> {
@@ -164,6 +165,11 @@ export interface ExportStatementNode extends BaseNode<"exportStatement"> {
     expression: ParserNode;
 }
 
+export interface SignExpressionNode extends BaseNode<"signExpression"> {
+    sign: (typeof UNARY_OPERATORS)[number];
+    expression: ParserNode;
+}
+
 export type ParserNode =
     | ProgramNode
     | StringNode
@@ -191,7 +197,8 @@ export type ParserNode =
     | BreakStatementNode
     | ContinueStatementNode
     | ImportStatementNode
-    | ExportStatementNode;
+    | ExportStatementNode
+    | SignExpressionNode;
 
 function isAssignable(expr: ParserNode): boolean {
     if (expr.type === "binaryExpression" && expr.operator.value === ".")
@@ -212,6 +219,18 @@ export class Parser {
     }
 
     private parsePrimary(): ParserNode {
+        if (this.is(TokenType.OPERATOR) && UNARY_OPERATORS.includes(this.tokens[this.pos].value as any)) {
+            const sign = this.eat(TokenType.OPERATOR);
+            const primary = this.parsePrimary();
+
+            return {
+                type: "signExpression",
+                expression: primary,
+                sign: sign.value as any,
+                span: new Span(sign.span.start, primary.span.end),
+            };
+        }
+
         if (this.is(TokenType.KEYWORD, "do") || this.is(TokenType.KEYWORD, "with")) {
             const parameters: Token[] = [];
 
@@ -412,8 +431,10 @@ export class Parser {
     private parseExpression(): ParserNode {
         const expr = this.parseExpressionInner(this.parsePrimary(), 0);
 
-        if (this.is(TokenType.EQUALS) && isAssignable(expr)) {
-            this.eat(TokenType.EQUALS);
+        if ((this.is(TokenType.EQUALS) || this.is(TokenType.ASSIGNMENT_OPERATOR)) && isAssignable(expr)) {
+            const operator = this.is(TokenType.ASSIGNMENT_OPERATOR)
+                ? this.eat(TokenType.ASSIGNMENT_OPERATOR).value
+                : this.eat(TokenType.EQUALS).value;
 
             const value = this.parseExpression();
 
@@ -421,6 +442,7 @@ export class Parser {
                 type: "variableAssign",
                 name: expr,
                 value,
+                operator,
                 isLocal: false,
 
                 span: new Span(expr.span.start, value.span.end),

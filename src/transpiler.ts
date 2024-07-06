@@ -1,4 +1,4 @@
-import { OPERATORS, Span, TokenType } from "./lexer";
+import { ASSIGNMENT_OPERATORS, OPERATORS, Span, TokenType, UNARY_OPERATORS } from "./lexer";
 import { ExternVariableType, ImportStatementNode, ImportType, ParserNode } from "./parser";
 
 const BUILTIN_OPERATORS = "__kaOperators";
@@ -161,7 +161,12 @@ export class Transpiler {
                 if (node.name.type === "variableAccess")
                     if (node.isLocal || !this.externVariables.has(node.name.name))
                         this.currentScope.add(node.name.name, { isExport: false }, node.isLocal);
-                return `${getVariableName(node.name)} = ${this.visit(node.value)}`;
+
+                if (node.operator === "=") return `${getVariableName(node.name)} = ${this.visit(node.value)}`;
+
+                return `${getVariableName(node.name)} = ${BUILTIN_OPERATORS}["${node.operator}"](${getVariableName(
+                    node.name
+                )}, ${this.visit(node.value)})`;
 
             case "expressionStatement":
                 return `${getIndent(this.indentLevel)}${this.visit(node.expression)};`;
@@ -324,13 +329,14 @@ export class Transpiler {
                 return `${getIndent(this.indentLevel)}export ${isVar ? "let " : ""}${this.visit(node.expression)};`;
             }
 
+            case "signExpression":
+                return `${BUILTIN_OPERATORS}["${node.sign}$"](${this.visit(node.expression)})`;
+
             case "program": {
                 const genBody = this.visitJoined(node.body, "\n");
                 let generated = `function ${BUILTIN_RANGE}(start, end) {
     const out = [];
-    for (let i = start; i < end; i++) {
-        out.push(i);
-    }
+    for (let i = start; i < end; i++) out.push(i);
     return out;
 }
 const ${BUILTIN_OPERATORS} = {\n`;
@@ -345,16 +351,18 @@ const ${BUILTIN_OPERATORS} = {\n`;
                         generated += `    "..": (a,b) => a[".."] ? a[".."](b) : ${BUILTIN_RANGE}(a, b),\n`;
                     } else {
                         generated += `    "${operator}": (a,b) => a["${operator}"] ? a["${operator}"](b) : a ${jsOperator} b,\n`;
+                        if (UNARY_OPERATORS.includes(operator as any))
+                            generated += `    "${operator}$": a => a["${operator}"] ? a["${operator}"]() : ${jsOperator}a,\n`;
                     }
                 }
+
+                generated += "}\n";
 
                 let vars = "";
                 for (const variable of this.currentScope.list()) {
                     if (variable.meta.isExport) continue;
                     vars += `let ${variable.name};\n`;
                 }
-
-                generated += "}\n";
 
                 return generated + vars + genBody;
             }
