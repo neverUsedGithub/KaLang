@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "codemirror": "^6.0.1",
-    "kalang": "^0.0.17",
+    "kalang": "^0.0.21",
     "localforage": "^1.10.0",
     "match-sorter": "^6.3.4",
     "react": "^18.2.0",

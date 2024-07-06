@@ -56,33 +56,36 @@ const kalangTheme = EditorView.theme(
   {}
 );
 
-const kalangLinter = linter((view) => {
-  const diagnostics: Diagnostic[] = [];
+const kalangLinter = linter(
+  (view) => {
+    const diagnostics: Diagnostic[] = [];
 
-  try {
-    transpileString(view.state.doc.toString());
-  } catch (e) {
-    if (e instanceof LexingError)
-      diagnostics.push({
-        from: e.pos.index,
-        to: e.pos.index + 1,
-        severity: "error",
-        message: e.reason,
-      });
-    else if (e instanceof ParsingError)
-      diagnostics.push({
-        from: e.span.start.index,
-        to: e.span.end.index + 1,
-        severity: "error",
-        message: e.reason,
-      });
-    else throw e;
+    try {
+      transpileString(view.state.doc.toString());
+    } catch (e) {
+      if (e instanceof LexingError)
+        diagnostics.push({
+          from: e.pos.index,
+          to: e.pos.index + 1,
+          severity: "error",
+          message: e.reason,
+        });
+      else if (e instanceof ParsingError)
+        diagnostics.push({
+          from: e.span.start.index,
+          to: e.span.end.index + 1,
+          severity: "error",
+          message: e.reason,
+        });
+      else throw e;
+    }
+
+    return diagnostics;
+  },
+  {
+    delay: 200,
   }
-
-  return diagnostics;
-}, {
-  delay: 200
-});
+);
 
 export default function PlaygroundPage() {
   const lastDoc = useRef<string>("");
@@ -94,7 +97,7 @@ export default function PlaygroundPage() {
     if (!editorEl.current) return;
 
     const state = EditorState.create({
-      doc: `kaboom({ focus: false })
+      doc: `kaplay({ focus: false })
 
 add([
   rect(20, 20),
@@ -134,8 +137,8 @@ add([
     </style>
   </head>
   <body>
-    <script src="https://cdn.jsdelivr.net/npm/kaboom@3000.1.17/dist/kaboom.min.js"></script>
-    <script>${output}</script>
+    <script src="https://cdn.jsdelivr.net/npm/kaplay@latest/dist/kaboom.min.js"></script>
+    <script src="data:text/javascript;base64,${btoa(output)}"></script>
   </body>
 </html>`;
         }),

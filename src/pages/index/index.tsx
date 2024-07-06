@@ -54,11 +54,7 @@ function IndexPage() {
             console:
           </p>
           <HighlightedCode
-            code={`function main do
-    console.log("Hello, World!")
-end
-
-main()`}
+            code={`console.log("Hello, World!")`}
           />
           <h3>Step 4: Run Your Program</h3>
           <p>
