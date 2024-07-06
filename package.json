@@ -3,7 +3,7 @@
     "version": "0.0.21",
     "description": "A programming language designed to make game development fast and fun!",
     "type": "module",
-    "main": "./dist/index.mjs",
+    "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "bin": {
         "kalang": "./dist/cli.js"
@@ -17,27 +17,27 @@
     "exports": {
         ".": {
             "types": "./dist/index.d.ts",
-            "import": "./dist/index.mjs"
+            "import": "./dist/index.js"
         },
         "./lexer": {
             "types": "./dist/lexer.d.ts",
-            "import": "./dist/lexer.mjs"
+            "import": "./dist/lexer.js"
         },
         "./parser": {
             "types": "./dist/parser.d.ts",
-            "import": "./dist/parser.mjs"
+            "import": "./dist/parser.js"
         },
         "./transpiler": {
             "types": "./dist/transpiler.d.ts",
-            "import": "./dist/transpiler.mjs"
+            "import": "./dist/transpiler.js"
         },
         "./visitor": {
             "types": "./dist/visitor.d.ts",
-            "import": "./dist/visitor.mjs"
+            "import": "./dist/visitor.js"
         },
         "./error": {
             "types": "./dist/error.d.ts",
-            "import": "./dist/error.mjs"
+            "import": "./dist/error.js"
         }
     },
     "keywords": [],
