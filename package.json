@@ -1,8 +1,10 @@
 {
     "name": "kalang",
-    "version": "0.0.20",
+    "version": "0.0.21",
     "description": "A programming language designed to make game development fast and fun!",
-    "main": "index.js",
+    "type": "module",
+    "main": "./dist/index.mjs",
+    "types": "./dist/index.d.ts",
     "bin": {
         "kalang": "./dist/cli.js"
     },
@@ -12,37 +14,30 @@
     "files": [
         "dist/**/*"
     ],
-    "types": "./dist/index.d.ts",
     "exports": {
         ".": {
             "types": "./dist/index.d.ts",
-            "import": "./dist/index.mjs",
-            "require": "./dist/index.js"
+            "import": "./dist/index.mjs"
         },
         "./lexer": {
             "types": "./dist/lexer.d.ts",
-            "import": "./dist/lexer.mjs",
-            "require": "./dist/lexer.js"
+            "import": "./dist/lexer.mjs"
         },
         "./parser": {
             "types": "./dist/parser.d.ts",
-            "import": "./dist/parser.mjs",
-            "require": "./dist/parser.js"
+            "import": "./dist/parser.mjs"
         },
         "./transpiler": {
             "types": "./dist/transpiler.d.ts",
-            "import": "./dist/transpiler.mjs",
-            "require": "./dist/transpiler.js"
+            "import": "./dist/transpiler.mjs"
         },
         "./visitor": {
             "types": "./dist/visitor.d.ts",
-            "import": "./dist/visitor.mjs",
-            "require": "./dist/visitor.js"
+            "import": "./dist/visitor.mjs"
         },
         "./error": {
             "types": "./dist/error.d.ts",
-            "import": "./dist/error.mjs",
-            "require": "./dist/error.js"
+            "import": "./dist/error.mjs"
         }
     },
     "keywords": [],
