@@ -214,6 +214,10 @@ export class ASTVisitor {
                 return;
             }
 
+            case "signExpression":
+                this.visit(node.expression);
+                return;
+
             case "program": {
                 node.body.map((node) => this.visit(node));
                 return;
