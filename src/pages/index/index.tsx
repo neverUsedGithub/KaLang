@@ -15,7 +15,7 @@ function IndexPage() {
           <h2>Whats KaLang?</h2>
           <p>
             KaLang is a programming language that is meant to be used with the
-            javascript library <a href="https://kaboomjs.com">Kaboom JS</a>, and
+            javascript library <a href="https://kaplayjs.com">KAPLAY JS</a>, and
             is designed to make game development fast and fun. It is a
             transpiled language, meaning it is converted to another language
             (JavaScript) before being executed. It has a simple and expressive
