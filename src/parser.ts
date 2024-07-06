@@ -907,7 +907,7 @@ export class Parser {
     private parseStatement() {
         const statement = this.parseStatementInner();
 
-        if (this.is(TokenType.KEYWORD, "if")) {
+        if (this.is(TokenType.KEYWORD, "if") && this.tokens[this.pos].span.start.line === statement.span.end.line) {
             this.eat(TokenType.KEYWORD, "if");
             const condition = this.parseExpression();
 
