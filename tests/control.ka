@@ -1,0 +1,7 @@
+console.log("Hello, World!") if 5 > 3
+
+function test(number) do
+    return if number <= 20
+
+    console.log("number is greater than 20")
+end

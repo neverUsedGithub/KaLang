@@ -170,6 +170,11 @@ export interface SignExpressionNode extends BaseNode<"signExpression"> {
     expression: ParserNode;
 }
 
+export interface TernaryStatementNode extends BaseNode<"ternaryStatement"> {
+    statement: ParserNode;
+    condition: ParserNode;
+}
+
 export type ParserNode =
     | ProgramNode
     | StringNode
@@ -198,7 +203,8 @@ export type ParserNode =
     | ContinueStatementNode
     | ImportStatementNode
     | ExportStatementNode
-    | SignExpressionNode;
+    | SignExpressionNode
+    | TernaryStatementNode;
 
 function isAssignable(expr: ParserNode): boolean {
     if (expr.type === "binaryExpression" && expr.operator.value === ".")
@@ -644,7 +650,7 @@ export class Parser {
         const start = this.eat(TokenType.KEYWORD, "return").span;
         let expr: ParserNode | null = null;
 
-        if (!this.is(TokenType.KEYWORD, "end")) expr = this.parseExpression();
+        if (!this.is(TokenType.KEYWORD, "end") && !this.is(TokenType.KEYWORD, "if")) expr = this.parseExpression();
 
         return {
             type: "returnStatement",
@@ -840,7 +846,7 @@ export class Parser {
         } satisfies ExportStatementNode;
     }
 
-    private parseStatement() {
+    private parseStatementInner() {
         if (this.is(TokenType.KEYWORD, "if")) {
             return this.parseIfStatement();
         }
@@ -896,6 +902,24 @@ export class Parser {
             expression: expr,
             span: expr.span,
         } satisfies ExpressionStatementNode;
+    }
+
+    private parseStatement() {
+        const statement = this.parseStatementInner();
+
+        if (this.is(TokenType.KEYWORD, "if")) {
+            this.eat(TokenType.KEYWORD, "if");
+            const condition = this.parseExpression();
+
+            return {
+                type: "ternaryStatement",
+                statement,
+                condition,
+                span: new Span(statement.span.start, condition.span.end),
+            } satisfies TernaryStatementNode;
+        }
+
+        return statement;
     }
 
     private parseProgram(): ProgramNode {

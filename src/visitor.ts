@@ -218,6 +218,11 @@ export class ASTVisitor {
                 this.visit(node.expression);
                 return;
 
+            case "ternaryStatement":
+                this.visit(node.condition);
+                this.visit(node.statement);
+                return;
+
             case "program": {
                 node.body.map((node) => this.visit(node));
                 return;

@@ -332,6 +332,12 @@ export class Transpiler {
             case "signExpression":
                 return `${BUILTIN_OPERATORS}["${node.sign}$"](${this.visit(node.expression)})`;
 
+            case "ternaryStatement": {
+                return `${getIndent(this.indentLevel++)}if (${this.visit(node.condition)}) {
+${this.visit(node.statement)}
+${getIndent(--this.indentLevel)}}`;
+            }
+
             case "program": {
                 const genBody = this.visitJoined(node.body, "\n");
                 let generated = `function ${BUILTIN_RANGE}(start, end) {
