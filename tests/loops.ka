@@ -7,7 +7,7 @@ j = 0
 while j < array.length do
     console.log(array.at(j))
 
-    j = j + 1
+    j += 1
 end
 
 while true do

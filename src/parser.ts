@@ -38,6 +38,10 @@ export interface StringNode extends BaseNode<"string"> {
     value: string;
 }
 
+export interface BooleanNode extends BaseNode<"boolean"> {
+    value: boolean;
+}
+
 export interface BinaryExpressionNode extends BaseNode<"binaryExpression"> {
     left: ParserNode;
     right: ParserNode;
@@ -204,7 +208,8 @@ export type ParserNode =
     | ImportStatementNode
     | ExportStatementNode
     | SignExpressionNode
-    | TernaryStatementNode;
+    | TernaryStatementNode
+    | BooleanNode;
 
 function isAssignable(expr: ParserNode): boolean {
     if (expr.type === "binaryExpression" && expr.operator.value === ".")
@@ -308,6 +313,16 @@ export class Parser {
                 value: curr.value,
                 span: curr.span,
             } satisfies StringNode;
+        }
+
+        if (this.is(TokenType.BOOLEAN)) {
+            const curr = this.eat(TokenType.BOOLEAN);
+
+            return {
+                type: "boolean",
+                value: curr.value === "true",
+                span: curr.span,
+            } satisfies BooleanNode;
         }
 
         if (this.is(TokenType.NUMBER)) {

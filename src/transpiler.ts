@@ -338,6 +338,9 @@ ${this.visit(node.statement)}
 ${getIndent(--this.indentLevel)}}`;
             }
 
+            case "boolean":
+                return `${node.value ? "true" : "false"}`;
+
             case "program": {
                 const genBody = this.visitJoined(node.body, "\n");
                 let generated = `function ${BUILTIN_RANGE}(start, end) {

@@ -3,3 +3,11 @@ function greet(name) do
 end
 
 greet("World")
+
+anonymous_function = with name do
+    console.log("Hello, " + name + "!")
+end
+
+parameterless_fn = do 
+    console.log("Hello, World!")
+end

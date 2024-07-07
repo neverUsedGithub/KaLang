@@ -21,12 +21,14 @@ const KEYWORDS = [
     "default",
     "export",
 ];
+const BOOLEANS = ["true", "false"];
 const SKIP = " \t\r\n";
 
 export enum TokenType {
     EOF = "EOF",
     STRING = "STRING",
     NUMBER = "NUMBER",
+    BOOLEAN = "BOOLEAN",
     KEYWORD = "KEYWORD",
     IDENTIFIER = "IDENTIFIER",
     DELIMITER = "DELIMITER",
@@ -257,7 +259,11 @@ export class Lexer {
             }
 
             return new Token(
-                KEYWORDS.includes(identifier) ? TokenType.KEYWORD : TokenType.IDENTIFIER,
+                BOOLEANS.includes(identifier)
+                    ? TokenType.BOOLEAN
+                    : KEYWORDS.includes(identifier)
+                    ? TokenType.KEYWORD
+                    : TokenType.IDENTIFIER,
                 identifier,
                 new Span(start, end)
             );

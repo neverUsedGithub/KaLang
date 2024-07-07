@@ -7,12 +7,17 @@ import { existsSync } from "fs";
 import { readFile, writeFile } from "fs/promises";
 import { ErrorFormatter } from "./error";
 import * as path from "path";
+import * as fs from "fs/promises";
 import { LexingError } from "./lexer";
 import { ParsingError } from "./parser";
 import { FsProvider, TranspilingError } from "./transpiler";
-import { globSync } from "glob";
 
 const nodeFsProvider: FsProvider = { exists: existsSync };
+const canReadPath = (path: string) =>
+    fs.access(path, fs.constants.R_OK).then(
+        () => true,
+        () => false
+    );
 
 program
     .name("kalang")
@@ -49,10 +54,21 @@ program
     .argument("<files...>", "the files to compile")
     .option("-o, --output", "the output file")
     .action(async (files: string[], opts: { output?: string }) => {
-        if (files.length === 1) files = globSync(files, { cwd: process.cwd() });
+        files = files.map((path) => path.replaceAll("\\", "/"));
+
+        if (files.length === 0) {
+            console.error("error: no input files");
+            process.exit(1);
+        }
 
         for (const file of files) {
             const abspath = path.join(process.cwd(), file);
+
+            if (!(await canReadPath(abspath))) {
+                console.error(`error: couldn't open ${file}`);
+                process.exit(1);
+            }
+
             const source = await readFile(abspath, { encoding: "utf-8" });
             let output: string;
 

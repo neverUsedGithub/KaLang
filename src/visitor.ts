@@ -100,6 +100,9 @@ export class ASTVisitor {
             case "string":
                 return;
 
+            case "boolean":
+                return;
+
             case "variableAccess":
                 return;
 

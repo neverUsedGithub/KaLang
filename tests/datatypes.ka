@@ -4,4 +4,5 @@ number2 = 123.456
 object = {
     key: "value"
 }
+boolean = true
 array = [ "1", 2, [ "three" ] ]

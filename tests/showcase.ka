@@ -42,10 +42,6 @@ end
 go("main")
 
 class Testing do
-    __init__() do
-
-    end
-
     +(other) do
         return null
     end
