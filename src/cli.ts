@@ -2,7 +2,7 @@
 
 import { version as langVersion } from "../package.json";
 import { program } from "commander";
-import { transpileString } from ".";
+import { transpileString } from "./index";
 import { existsSync } from "fs";
 import { readFile, writeFile } from "fs/promises";
 import { ErrorFormatter } from "./error";
