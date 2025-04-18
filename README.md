@@ -17,11 +17,7 @@ https://github.com/neverUsedGithub/kalang-extension
 ```
 # program.ka
 
-function main do
-    console.log("Hello, World!")
-end
-
-main()
+console.log("Hello, World!")
 ```
 
 ### 3. Run your program
