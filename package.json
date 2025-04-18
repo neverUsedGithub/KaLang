@@ -1,6 +1,6 @@
 {
     "name": "kalang",
-    "version": "0.0.23",
+    "version": "0.0.24",
     "description": "A programming language designed to make game development fast and fun!",
     "type": "module",
     "main": "./dist/index.js",
