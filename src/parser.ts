@@ -680,6 +680,9 @@ export class Parser {
         const params: string[] = [];
         const body: ParserNode[] = [];
 
+        if (methodName.type === TokenType.IDENTIFIER && methodName.value === "constructor")
+            throw new ParsingError("reserved class field 'constructor'", methodName.span);
+
         if (!this.is(TokenType.KEYWORD, "do")) {
             this.eat(TokenType.DELIMITER, "(");
 
@@ -714,6 +717,8 @@ export class Parser {
 
     private parseFieldDeclaration() {
         const name = this.eat(TokenType.IDENTIFIER);
+        if (name.value === "constructor") throw new ParsingError("reserved class field 'constructor'", name.span);
+
         this.eat(TokenType.EQUALS);
         const value = this.parseExpression();
 
