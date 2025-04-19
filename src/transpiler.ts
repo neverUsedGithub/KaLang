@@ -357,11 +357,11 @@ const ${BUILTIN_OPERATORS} = {\n`;
                     if (operator === "!=" || operator === "==") jsOperator += "=";
 
                     if (operator === "..") {
-                        generated += `    "..": (a,b) => a[".."] ? a[".."](b) : ${BUILTIN_RANGE}(a, b),\n`;
+                        generated += `    "..": (a,b) => a && a[".."] ? a[".."](b) : ${BUILTIN_RANGE}(a, b),\n`;
                     } else {
-                        generated += `    "${operator}": (a,b) => a["${operator}"] ? a["${operator}"](b) : a ${jsOperator} b,\n`;
+                        generated += `    "${operator}": (a,b) => a && a["${operator}"] ? a["${operator}"](b) : a ${jsOperator} b,\n`;
                         if (UNARY_OPERATORS.includes(operator as any))
-                            generated += `    "${operator}$": a => a["${operator}"] ? a["${operator}"]() : ${jsOperator}a,\n`;
+                            generated += `    "${operator}$": a => a && a["${operator}"] ? a["${operator}"]() : ${jsOperator}a,\n`;
                     }
                 }
 

@@ -3,18 +3,27 @@ class TrainCart do
 
     __init__(name) do
         this.name = name
-        this.parts = []
+
+        this.next = null
+        this.prev = null
+    end
+
+    string do
+        return this.name if this.next == null
+        return this.name + " -> " + this.next.string()
     end
 
     log do
-        console.log(this.name, "->", this.parts.map(with cart do
-            return cart.name
-        end).join(" -> "))
+        cart = this
+        while cart.prev do cart = cart.prev end
+        console.log(cart.string())
     end
 
-    +(other) do
-        this.parts.push(other)
-        return this
+    +(cart) do
+        this.next = cart
+        cart.prev = this
+
+        return cart
     end
 end
 
